@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-bJfOiBsjvA13I03MBk1UyZrqsP9a7ab3mAaC/Ybyya8=' blob: 'wasm-unsafe-eval'; style-src 'unsafe-inline' https://fonts.googleapis.com; img-src data: blob:; font-src data: https://fonts.gstatic.com; worker-src blob:; connect-src data: blob: 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-5aHran/yzrbPzfGIHpCeYOef9tVt/3hKz+R1gH+BUW8=' blob: 'wasm-unsafe-eval'; style-src 'unsafe-inline' https://fonts.googleapis.com; img-src data: blob:; font-src data: https://fonts.gstatic.com; worker-src blob:; connect-src data: blob: 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="description" content="Heurix PDF Viewer — read, search and print PDFs in your browser. Files never leave your computer.">
 <meta name="theme-color" content="#5b21b6">
 <title>Heurix PDF Viewer</title>
@@ -650,10 +650,12 @@ body[data-tool="etxt"] .page,body[data-tool="etxt"] .textLayer span{cursor:text}
 .ms-panel .ms-cal:hover{background:#ece4fb}
 .ms-panel .ms-cal svg{width:16px;height:16px}
 @media (max-width:900px){.ms-panel{left:8px;right:8px;flex-wrap:wrap}}
-body[data-tool="dist"] .page,body[data-tool="dist"] .textLayer span,
-body[data-tool="peri"] .page,body[data-tool="peri"] .textLayer span,
-body[data-tool="area"] .page,body[data-tool="area"] .textLayer span,
-body[data-tool="calib"] .page,body[data-tool="calib"] .textLayer span{cursor:crosshair}
+:root{--meas-cur:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='34' height='34' viewBox='0 0 34 34'><g stroke-linecap='round' fill='none'><path d='M17 3v10M17 21v10M3 17h10M21 17h10' stroke='white' stroke-width='4.5'/><path d='M17 3v10M17 21v10M3 17h10M21 17h10' stroke='%231c1428' stroke-width='1.6'/></g><circle cx='17' cy='17' r='2.6' fill='%23d93025' stroke='white' stroke-width='1.2'/></svg>") 17 17, crosshair}
+body[data-tool="dist"] .page,body[data-tool="dist"] .page *,
+body[data-tool="peri"] .page,body[data-tool="peri"] .page *,
+body[data-tool="area"] .page,body[data-tool="area"] .page *,
+body[data-tool="calib"] .page,body[data-tool="calib"] .page *{cursor:var(--meas-cur)}
+body.is-dragging[data-tool="dist"] *,body.is-dragging[data-tool="peri"] *,body.is-dragging[data-tool="area"] *,body.is-dragging[data-tool="calib"] *{cursor:var(--meas-cur)!important}
 .an-meas{position:absolute;transform:translate(-50%,-50%);pointer-events:none;z-index:5;padding:calc(var(--total-scale-factor) * 1.5px) calc(var(--total-scale-factor) * 5px);border:1.2px solid var(--l,#d93025);border-radius:4px;background:rgba(255,255,255,.93);color:var(--l,#d93025);font:700 calc(var(--total-scale-factor) * 10.5px)/1.15 Helvetica,Arial,"Liberation Sans",sans-serif;white-space:nowrap;font-variant-numeric:tabular-nums;box-shadow:0 1px 3px rgba(28,20,40,.18)}
 .an-meas.is-active{box-shadow:0 0 0 2px var(--violet-2)}
 .an-meas.calib{border-style:dashed}
@@ -2481,7 +2483,7 @@ function canEdit(showMessage = true) {
 async function ensureAuthor() {
   if (A.author) return true;
   const v = await modal({
-    title: 'Your name', icon: 'i-user', ok: 'Continue', input: true, inputType: 'text', placeholder: 'For example: Ali Al-Sabah',
+    title: 'Your name', icon: 'i-user', ok: 'Continue', input: true, inputType: 'text',
     body: 'Your name is shown on your comments and saved in the PDF, so colleagues can see who wrote them.'
   });
   const name = (v || '').trim();
@@ -2596,7 +2598,7 @@ $('annotBtn').addEventListener('click', () => { A.ribbonOpen = !A.ribbonOpen; LS
 $('ribbonSaveBtn').addEventListener('click', () => saveDocument());
 $('saveAsBtn').addEventListener('click', () => saveDocument({ as: true }));
 $('authorBtn').addEventListener('click', async () => {
-  const v = await modal({ title: 'Your name', icon: 'i-user', ok: 'Save', input: true, inputType: 'text', value: A.author, placeholder: 'For example: Ali Al-Sabah', body: 'Shown on the comments you add from now on.' });
+  const v = await modal({ title: 'Your name', icon: 'i-user', ok: 'Save', input: true, inputType: 'text', value: A.author, body: 'Shown on the comments you add from now on.' });
   if (v && v.trim()) setAuthor(v.trim());
 });
 $('cmFilter').addEventListener('change', (e) => { A.filter = e.target.value; renderComments(true); });
@@ -6724,6 +6726,12 @@ function pointAlong(pts, frac) {
   for (let i = 1; i < pts.length; i++) { const l = segLen(pts[i - 1], pts[i]); if (want <= l) { const t = l ? want / l : 0; return [pts[i - 1][0] + t * (pts[i][0] - pts[i - 1][0]), pts[i - 1][1] + t * (pts[i][1] - pts[i - 1][1])]; } want -= l; }
   return pts[pts.length - 1].slice();
 }
+function measTangent(pts, frac) {                                               // the segment under the point at `frac` of the path
+  if (!pts || pts.length < 2) return null;
+  let want = pathLen(pts, false) * frac;
+  for (let i = 1; i < pts.length; i++) { const l = segLen(pts[i - 1], pts[i]); if (want <= l || i === pts.length - 1) return [pts[i - 1], pts[i]]; want -= l; }
+  return null;
+}
 const inPoly = (x, y, P) => { let c = false; for (let i = 0, j = P.length - 1; i < P.length; j = i++) if ((P[i][1] > y) !== (P[j][1] > y) && x < ((P[j][0] - P[i][0]) * (y - P[i][1])) / (P[j][1] - P[i][1]) + P[i][0]) c = !c; return c; };
 const bboxPts = (pts) => [Math.min(...pts.map((q) => q[0])), Math.min(...pts.map((q) => q[1])), Math.max(...pts.map((q) => q[0])), Math.max(...pts.map((q) => q[1]))].map(r2);
 // keep the line on 0, 45, 90 ... degrees from the previous point
@@ -6770,6 +6778,17 @@ function drawMeasure(a, vp, px, py, parts) {
   if (P.length >= (a.type === 'area' ? 3 : 2) || a.calib) {
     const info = measInfo(a), c = vp.convertToViewportPoint(info.at[0], info.at[1]);
     const lab = el('div', `an an-meas${active}${a.calib ? ' calib' : ''}`, { textContent: info.text });
+    if (a.type !== 'area' || a.calib) {                                          // keep the value beside the line, not on top of it
+      const tg = measTangent(a.pts, a.type === 'dist' || a.calib ? 0.5 : 0.5);
+      if (tg) {
+        const T0 = vp.convertToViewportPoint(tg[0][0], tg[0][1]), T1 = vp.convertToViewportPoint(tg[1][0], tg[1][1]);
+        let nx = -(T1[1] - T0[1]), ny = T1[0] - T0[0]; const l = Math.hypot(nx, ny) || 1; nx /= l; ny /= l;
+        if (ny > 0 || (Math.abs(ny) < 1e-6 && nx < 0)) { nx = -nx; ny = -ny; }   // prefer the side above the line
+        const sf = S.zoom * CSS_UNITS, bw = (info.text.length * 6.3 + 12) * sf, bh = 15.5 * sf;
+        const off = Math.abs(nx) * bw / 2 + Math.abs(ny) * bh / 2 + 5 + (a.width || 2) / 2;
+        c[0] += nx * off; c[1] += ny * off;
+      }
+    }
     lab.dataset.id = a.id; lab.style.cssText = `--l:${col};left:${px(c[0])};top:${py(c[1])}`;
     frag.append(lab);
   }
@@ -6991,7 +7010,16 @@ async function measWriteParts(a, H) {
   const { ctx, doc, S_, form } = H, hex = lineColor(a), rgb = hexRgb(hex).join(' '), w = a.width || 2, pts = a.pts, f = (q) => `${r2(q[0])} ${r2(q[1])}`;
   let font = measFonts.get(doc); if (!font) { font = doc.embedStandardFont('Helvetica-Bold'); measFonts.set(doc, font); }
   const sc = scaleOk(a.scale) ? a.scale : A.scale, k = scaleK(sc), info = measInfo(a);
-  const size = 10, label = info.text.replace(/²/g, '²'), tw = font.widthOfTextAtSize(label, size), bw = tw + 8, bh = size + 6, cx = info.at[0], cy = info.at[1];
+  const size = 10, label = info.text.replace(/²/g, '²'), tw = font.widthOfTextAtSize(label, size), bw = tw + 8, bh = size + 6, cx0 = info.at[0], cy0 = info.at[1];
+  let cx = cx0, cy = cy0;
+  if (a.type !== 'area') {                                                      // value sits beside the line, above it
+    const tg = measTangent(pts, 0.5);
+    if (tg) {
+      let nx = -(tg[1][1] - tg[0][1]), ny = tg[1][0] - tg[0][0]; const l = Math.hypot(nx, ny) || 1; nx /= l; ny /= l;
+      if (ny < 0 || (Math.abs(ny) < 1e-6 && nx < 0)) { nx = -nx; ny = -ny; }   // PDF y runs up
+      const off = Math.abs(nx) * bw / 2 + Math.abs(ny) * bh / 2 + 3 + w / 2; cx += nx * off; cy += ny * off;
+    }
+  }
   const ops = [`${rgb} RG ${w} w 1 J 1 j`];
   const circle = (x, y, r) => { const c = 0.5523 * r; return `${r2(x + r)} ${r2(y)} m ${r2(x + r)} ${r2(y + c)} ${r2(x + c)} ${r2(y + r)} ${r2(x)} ${r2(y + r)} c ${r2(x - c)} ${r2(y + r)} ${r2(x - r)} ${r2(y + c)} ${r2(x - r)} ${r2(y)} c ${r2(x - r)} ${r2(y - c)} ${r2(x - c)} ${r2(y - r)} ${r2(x)} ${r2(y - r)} c ${r2(x + c)} ${r2(y - r)} ${r2(x + r)} ${r2(y - c)} ${r2(x + r)} ${r2(y)} c h f`; };
   const path = pts.map((q, i) => `${f(q)} ${i ? 'l' : 'm'}`).join(' ');

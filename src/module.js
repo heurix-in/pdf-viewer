@@ -1452,7 +1452,7 @@ function canEdit(showMessage = true) {
 async function ensureAuthor() {
   if (A.author) return true;
   const v = await modal({
-    title: 'Your name', icon: 'i-user', ok: 'Continue', input: true, inputType: 'text', placeholder: 'For example: Ali Al-Sabah',
+    title: 'Your name', icon: 'i-user', ok: 'Continue', input: true, inputType: 'text',
     body: 'Your name is shown on your comments and saved in the PDF, so colleagues can see who wrote them.'
   });
   const name = (v || '').trim();
@@ -1567,7 +1567,7 @@ $('annotBtn').addEventListener('click', () => { A.ribbonOpen = !A.ribbonOpen; LS
 $('ribbonSaveBtn').addEventListener('click', () => saveDocument());
 $('saveAsBtn').addEventListener('click', () => saveDocument({ as: true }));
 $('authorBtn').addEventListener('click', async () => {
-  const v = await modal({ title: 'Your name', icon: 'i-user', ok: 'Save', input: true, inputType: 'text', value: A.author, placeholder: 'For example: Ali Al-Sabah', body: 'Shown on the comments you add from now on.' });
+  const v = await modal({ title: 'Your name', icon: 'i-user', ok: 'Save', input: true, inputType: 'text', value: A.author, body: 'Shown on the comments you add from now on.' });
   if (v && v.trim()) setAuthor(v.trim());
 });
 $('cmFilter').addEventListener('change', (e) => { A.filter = e.target.value; renderComments(true); });

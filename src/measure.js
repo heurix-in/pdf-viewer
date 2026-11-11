@@ -44,6 +44,12 @@ function pointAlong(pts, frac) {
   for (let i = 1; i < pts.length; i++) { const l = segLen(pts[i - 1], pts[i]); if (want <= l) { const t = l ? want / l : 0; return [pts[i - 1][0] + t * (pts[i][0] - pts[i - 1][0]), pts[i - 1][1] + t * (pts[i][1] - pts[i - 1][1])]; } want -= l; }
   return pts[pts.length - 1].slice();
 }
+function measTangent(pts, frac) {                                               // the segment under the point at `frac` of the path
+  if (!pts || pts.length < 2) return null;
+  let want = pathLen(pts, false) * frac;
+  for (let i = 1; i < pts.length; i++) { const l = segLen(pts[i - 1], pts[i]); if (want <= l || i === pts.length - 1) return [pts[i - 1], pts[i]]; want -= l; }
+  return null;
+}
 const inPoly = (x, y, P) => { let c = false; for (let i = 0, j = P.length - 1; i < P.length; j = i++) if ((P[i][1] > y) !== (P[j][1] > y) && x < ((P[j][0] - P[i][0]) * (y - P[i][1])) / (P[j][1] - P[i][1]) + P[i][0]) c = !c; return c; };
 const bboxPts = (pts) => [Math.min(...pts.map((q) => q[0])), Math.min(...pts.map((q) => q[1])), Math.max(...pts.map((q) => q[0])), Math.max(...pts.map((q) => q[1]))].map(r2);
 // keep the line on 0, 45, 90 ... degrees from the previous point
@@ -90,6 +96,17 @@ function drawMeasure(a, vp, px, py, parts) {
   if (P.length >= (a.type === 'area' ? 3 : 2) || a.calib) {
     const info = measInfo(a), c = vp.convertToViewportPoint(info.at[0], info.at[1]);
     const lab = el('div', `an an-meas${active}${a.calib ? ' calib' : ''}`, { textContent: info.text });
+    if (a.type !== 'area' || a.calib) {                                          // keep the value beside the line, not on top of it
+      const tg = measTangent(a.pts, a.type === 'dist' || a.calib ? 0.5 : 0.5);
+      if (tg) {
+        const T0 = vp.convertToViewportPoint(tg[0][0], tg[0][1]), T1 = vp.convertToViewportPoint(tg[1][0], tg[1][1]);
+        let nx = -(T1[1] - T0[1]), ny = T1[0] - T0[0]; const l = Math.hypot(nx, ny) || 1; nx /= l; ny /= l;
+        if (ny > 0 || (Math.abs(ny) < 1e-6 && nx < 0)) { nx = -nx; ny = -ny; }   // prefer the side above the line
+        const sf = S.zoom * CSS_UNITS, bw = (info.text.length * 6.3 + 12) * sf, bh = 15.5 * sf;
+        const off = Math.abs(nx) * bw / 2 + Math.abs(ny) * bh / 2 + 5 + (a.width || 2) / 2;
+        c[0] += nx * off; c[1] += ny * off;
+      }
+    }
     lab.dataset.id = a.id; lab.style.cssText = `--l:${col};left:${px(c[0])};top:${py(c[1])}`;
     frag.append(lab);
   }
@@ -311,7 +328,16 @@ async function measWriteParts(a, H) {
   const { ctx, doc, S_, form } = H, hex = lineColor(a), rgb = hexRgb(hex).join(' '), w = a.width || 2, pts = a.pts, f = (q) => `${r2(q[0])} ${r2(q[1])}`;
   let font = measFonts.get(doc); if (!font) { font = doc.embedStandardFont('Helvetica-Bold'); measFonts.set(doc, font); }
   const sc = scaleOk(a.scale) ? a.scale : A.scale, k = scaleK(sc), info = measInfo(a);
-  const size = 10, label = info.text.replace(/²/g, '²'), tw = font.widthOfTextAtSize(label, size), bw = tw + 8, bh = size + 6, cx = info.at[0], cy = info.at[1];
+  const size = 10, label = info.text.replace(/²/g, '²'), tw = font.widthOfTextAtSize(label, size), bw = tw + 8, bh = size + 6, cx0 = info.at[0], cy0 = info.at[1];
+  let cx = cx0, cy = cy0;
+  if (a.type !== 'area') {                                                      // value sits beside the line, above it
+    const tg = measTangent(pts, 0.5);
+    if (tg) {
+      let nx = -(tg[1][1] - tg[0][1]), ny = tg[1][0] - tg[0][0]; const l = Math.hypot(nx, ny) || 1; nx /= l; ny /= l;
+      if (ny < 0 || (Math.abs(ny) < 1e-6 && nx < 0)) { nx = -nx; ny = -ny; }   // PDF y runs up
+      const off = Math.abs(nx) * bw / 2 + Math.abs(ny) * bh / 2 + 3 + w / 2; cx += nx * off; cy += ny * off;
+    }
+  }
   const ops = [`${rgb} RG ${w} w 1 J 1 j`];
   const circle = (x, y, r) => { const c = 0.5523 * r; return `${r2(x + r)} ${r2(y)} m ${r2(x + r)} ${r2(y + c)} ${r2(x + c)} ${r2(y + r)} ${r2(x)} ${r2(y + r)} c ${r2(x - c)} ${r2(y + r)} ${r2(x - r)} ${r2(y + c)} ${r2(x - r)} ${r2(y)} c ${r2(x - r)} ${r2(y - c)} ${r2(x - c)} ${r2(y - r)} ${r2(x)} ${r2(y - r)} c ${r2(x + c)} ${r2(y - r)} ${r2(x + r)} ${r2(y - c)} ${r2(x + r)} ${r2(y)} c h f`; };
   const path = pts.map((q, i) => `${f(q)} ${i ? 'l' : 'm'}`).join(' ');

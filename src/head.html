@@ -650,10 +650,12 @@ body[data-tool="etxt"] .page,body[data-tool="etxt"] .textLayer span{cursor:text}
 .ms-panel .ms-cal:hover{background:#ece4fb}
 .ms-panel .ms-cal svg{width:16px;height:16px}
 @media (max-width:900px){.ms-panel{left:8px;right:8px;flex-wrap:wrap}}
-body[data-tool="dist"] .page,body[data-tool="dist"] .textLayer span,
-body[data-tool="peri"] .page,body[data-tool="peri"] .textLayer span,
-body[data-tool="area"] .page,body[data-tool="area"] .textLayer span,
-body[data-tool="calib"] .page,body[data-tool="calib"] .textLayer span{cursor:crosshair}
+:root{--meas-cur:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='34' height='34' viewBox='0 0 34 34'><g stroke-linecap='round' fill='none'><path d='M17 3v10M17 21v10M3 17h10M21 17h10' stroke='white' stroke-width='4.5'/><path d='M17 3v10M17 21v10M3 17h10M21 17h10' stroke='%231c1428' stroke-width='1.6'/></g><circle cx='17' cy='17' r='2.6' fill='%23d93025' stroke='white' stroke-width='1.2'/></svg>") 17 17, crosshair}
+body[data-tool="dist"] .page,body[data-tool="dist"] .page *,
+body[data-tool="peri"] .page,body[data-tool="peri"] .page *,
+body[data-tool="area"] .page,body[data-tool="area"] .page *,
+body[data-tool="calib"] .page,body[data-tool="calib"] .page *{cursor:var(--meas-cur)}
+body.is-dragging[data-tool="dist"] *,body.is-dragging[data-tool="peri"] *,body.is-dragging[data-tool="area"] *,body.is-dragging[data-tool="calib"] *{cursor:var(--meas-cur)!important}
 .an-meas{position:absolute;transform:translate(-50%,-50%);pointer-events:none;z-index:5;padding:calc(var(--total-scale-factor) * 1.5px) calc(var(--total-scale-factor) * 5px);border:1.2px solid var(--l,#d93025);border-radius:4px;background:rgba(255,255,255,.93);color:var(--l,#d93025);font:700 calc(var(--total-scale-factor) * 10.5px)/1.15 Helvetica,Arial,"Liberation Sans",sans-serif;white-space:nowrap;font-variant-numeric:tabular-nums;box-shadow:0 1px 3px rgba(28,20,40,.18)}
 .an-meas.is-active{box-shadow:0 0 0 2px var(--violet-2)}
 .an-meas.calib{border-style:dashed}
