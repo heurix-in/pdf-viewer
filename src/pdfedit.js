@@ -197,7 +197,80 @@ const HXEdit = (() => {
     if (/times|serif|georgia|garamond|palatino|book|roman/.test(n) && !/sans/.test(n)) return bold ? (it ? 'Times-BoldItalic' : 'Times-Bold') : (it ? 'Times-Italic' : 'Times-Roman');
     return bold ? (it ? 'Helvetica-BoldOblique' : 'Helvetica-Bold') : (it ? 'Helvetica-Oblique' : 'Helvetica');
   }
-  const DEFAULT_FONT = { two: false, vert: false, asc: 750, desc: -250, w: () => 500 };
+
+  /* ---------- reading the words: character code -> Unicode ---------- */
+  const CP1252 = { 0x80: '€', 0x82: '‚', 0x83: 'ƒ', 0x84: '„', 0x85: '…', 0x86: '†', 0x87: '‡', 0x88: 'ˆ', 0x89: '‰', 0x8a: 'Š', 0x8b: '‹', 0x8c: 'Œ', 0x8e: 'Ž', 0x91: '‘', 0x92: '’', 0x93: '“', 0x94: '”', 0x95: '•', 0x96: '–', 0x97: '—', 0x98: '˜', 0x99: '™', 0x9a: 'š', 0x9b: '›', 0x9c: 'œ', 0x9e: 'ž', 0x9f: 'Ÿ' };
+  const MAC_HIGH = 'ÄÅÇÉÑÖÜáàâäãåçéèêëíìîïñóòôöõúùûü†°¢£§•¶ß®©™´¨≠ÆØ∞±≤≥¥µ∂∑∏π∫ªºΩæø¿¡¬√ƒ≈∆«»… ÀÃÕŒœ–—“”‘’÷◊ÿŸ⁄€‹›ﬁﬂ‡·‚„‰ÂÊÁËÈÍÎÏÌÓÔÒÚÛÙıˆ˜¯˘˙˚¸˝˛ˇ';
+  const GLYPH = { space: ' ', exclam: '!', quotedbl: '"', numbersign: '#', dollar: '$', percent: '%', ampersand: '&', quotesingle: "'", parenleft: '(', parenright: ')', asterisk: '*', plus: '+', comma: ',', hyphen: '-', minus: '−', period: '.', slash: '/', zero: '0', one: '1', two: '2', three: '3', four: '4', five: '5', six: '6', seven: '7', eight: '8', nine: '9', colon: ':', semicolon: ';', less: '<', equal: '=', greater: '>', question: '?', at: '@', bracketleft: '[', backslash: '\\', bracketright: ']', asciicircum: '^', underscore: '_', grave: '`', braceleft: '{', bar: '|', braceright: '}', asciitilde: '~', bullet: '•', endash: '–', emdash: '—', quoteleft: '‘', quoteright: '’', quotedblleft: '“', quotedblright: '”', quotesinglbase: '‚', quotedblbase: '„', ellipsis: '…', degree: '°', plusminus: '±', multiply: '×', divide: '÷', mu: 'µ', copyright: '©', registered: '®', trademark: '™', Euro: '€', fi: 'fi', fl: 'fl', section: '§', paragraph: '¶', dagger: '†', daggerdbl: '‡', cent: '¢', sterling: '£', yen: '¥', currency: '¤', brokenbar: '¦', guillemotleft: '«', guillemotright: '»', exclamdown: '¡', questiondown: '¿', onesuperior: '¹', twosuperior: '²', threesuperior: '³', onequarter: '¼', onehalf: '½', threequarters: '¾', ordfeminine: 'ª', ordmasculine: 'º', germandbls: 'ß', AE: 'Æ', ae: 'æ', Oslash: 'Ø', oslash: 'ø', Eth: 'Ð', eth: 'ð', Thorn: 'Þ', thorn: 'þ', OE: 'Œ', oe: 'œ', nbspace: ' ', sfthyphen: '-', dotlessi: 'ı', perthousand: '‰', macron: '¯', acute: '´', dieresis: '¨', cedilla: '¸', circumflex: 'ˆ', tilde: '˜' };
+  const ACCENT = { grave: '̀', acute: '́', circumflex: '̂', tilde: '̃', dieresis: '̈', ring: '̊', cedilla: '̧', caron: '̌' };
+  function glyphChar(n) {
+    if (!n) return null;
+    if (Object.prototype.hasOwnProperty.call(GLYPH, n)) return GLYPH[n];
+    if (/^[A-Za-z]$/.test(n)) return n;
+    let m = /^uni([0-9A-Fa-f]{4})/.exec(n) || /^u([0-9A-Fa-f]{4,6})$/.exec(n);
+    if (m) { try { return String.fromCodePoint(parseInt(m[1], 16)); } catch (_) { return null; } }
+    m = /^([A-Za-z])(grave|acute|circumflex|tilde|dieresis|ring|cedilla|caron)$/.exec(n);
+    if (m) return (m[1] + ACCENT[m[2]]).normalize('NFC');
+    return null;
+  }
+  function parseCMap(bytes) {
+    let txt = ''; const lim = Math.min(bytes.length, 1500000);
+    for (let i = 0; i < lim; i += 8192) txt += String.fromCharCode.apply(null, bytes.subarray(i, Math.min(lim, i + 8192)));
+    const map = new Map();
+    const u16 = (h) => { if (h.length <= 2) return String.fromCharCode(parseInt(h || '0', 16)); let s = ''; for (let i = 0; i + 3 < h.length; i += 4) s += String.fromCharCode(parseInt(h.substr(i, 4), 16)); return s; };
+    const blocks = /begin(bfchar|bfrange)([\s\S]*?)end\1/g; let m;
+    while ((m = blocks.exec(txt))) {
+      if (m[1] === 'bfchar') {
+        const re = /<([0-9A-Fa-f]+)>\s*<([0-9A-Fa-f]*)>/g; let k;
+        while ((k = re.exec(m[2]))) map.set(parseInt(k[1], 16), u16(k[2]));
+      } else {
+        const re = /<([0-9A-Fa-f]+)>\s*<([0-9A-Fa-f]+)>\s*(<[0-9A-Fa-f]*>|\[[^\]]*\])/g; let k;
+        while ((k = re.exec(m[2]))) {
+          const lo = parseInt(k[1], 16), hi = Math.min(parseInt(k[2], 16), lo + 65535);
+          if (k[3][0] === '[') { const items = k[3].match(/<[0-9A-Fa-f]*>/g) || []; items.forEach((t, i) => { if (lo + i <= hi) map.set(lo + i, u16(t.slice(1, -1))); }); }
+          else { const base = u16(k[3].slice(1, -1)), last = base.charCodeAt(base.length - 1); for (let c = lo; c <= hi; c++) map.set(c, base.slice(0, -1) + String.fromCharCode(last + (c - lo))); }
+        }
+      }
+    }
+    return map;
+  }
+  function simpleDecoder(PL, fdict) {
+    const { PDFName, PDFArray, PDFNumber, PDFDict } = PL, N = (s) => PDFName.of(s);
+    const enc = fdict.lookup(N('Encoding'));
+    let base = 'WinAnsiEncoding', diffs = null;
+    if (enc instanceof PDFName) base = enc.decodeText();
+    else if (enc instanceof PDFDict) {
+      const b = enc.lookup(N('BaseEncoding')); if (b instanceof PDFName) base = b.decodeText();
+      const d = enc.lookup(N('Differences'));
+      if (d instanceof PDFArray) {
+        diffs = new Map(); let code = 0;
+        for (let i = 0; i < d.size(); i++) { const v = d.lookup(i); if (v instanceof PDFNumber) code = v.asNumber(); else if (v instanceof PDFName) diffs.set(code++, glyphChar(v.decodeText())); }
+      }
+    }
+    return (c) => {
+      if (diffs && diffs.has(c)) return diffs.get(c);
+      if (c < 32 || c === 127) return null;
+      if (c < 127) return String.fromCharCode(c);
+      if (base === 'MacRomanEncoding' && c >= 128) return MAC_HIGH[c - 128] || null;
+      if (c < 160) return CP1252[c] || null;
+      return String.fromCharCode(c);
+    };
+  }
+  // the standard font that looks most like this one
+  const stdName = (fam, bold, ital) => {
+    if (fam === 'Times') return bold ? (ital ? 'Times-BoldItalic' : 'Times-Bold') : (ital ? 'Times-Italic' : 'Times-Roman');
+    if (fam === 'Courier') return bold ? (ital ? 'Courier-BoldOblique' : 'Courier-Bold') : (ital ? 'Courier-Oblique' : 'Courier');
+    return bold ? (ital ? 'Helvetica-BoldOblique' : 'Helvetica-Bold') : (ital ? 'Helvetica-Oblique' : 'Helvetica');
+  };
+  function famOf(name, flags) {
+    const n = (name || '').toLowerCase().replace(/[\s_-]/g, '');
+    if (/courier|mono|consol|menlo|lucidaconsole|typewriter/.test(n)) return 'Courier';
+    if (/arial|helvet|calibri|verdana|tahoma|segoe|sans|gothic|myriad|roboto|opensans|lato|frutiger|univers|trebuc|futura|avenir/.test(n)) return 'Helvetica';
+    if (/times|serif|georgia|garamond|palatino|book|roman|cambria|minion|century|baskerville|didot|bodoni|caslon|charter/.test(n)) return 'Times';
+    if (flags & 1) return 'Courier';
+    return (flags & 2) ? 'Times' : 'Helvetica';
+  }
+  const DEFAULT_FONT = { two: false, vert: false, asc: 750, desc: -250, w: () => 500, fam: 'Helvetica', bold: false, italic: false, dec: (c) => (c >= 32 && c < 127 ? String.fromCharCode(c) : null) };
 
   async function buildFont(PL, fdict) {
     const { PDFName, PDFArray, PDFNumber, PDFDict, PDFRef } = PL, N = (s) => PDFName.of(s);
@@ -248,6 +321,22 @@ const HXEdit = (() => {
       if (a > 0) info.asc = Math.min(a, 950);
       if (d < 0) info.desc = Math.max(d, -300);
     }
+    // what the words say, and what the font looks like (used when a line of text is changed)
+    try {
+      const nmc = baseFont.replace(/^[A-Z]{6}\+/, '');
+      let fl = 0, bold = /bold|black|heavy|demi/i.test(nmc), ital = /italic|oblique/i.test(nmc);
+      if (desc instanceof PDFDict) {
+        fl = numOf(desc.lookup(N('Flags')), 0);
+        if (numOf(desc.lookup(N('ItalicAngle')), 0) !== 0 || (fl & 64)) ital = true;
+        if (numOf(desc.lookup(N('FontWeight')), 400) >= 600 || (fl & 262144)) bold = true;
+      }
+      info.fam = famOf(nmc, fl); info.bold = bold; info.italic = ital; info.fname = nmc;
+      let uni = null;
+      const tu = fdict.lookup(N('ToUnicode'));
+      if (tu && tu.dict) { const m = parseCMap(decodeStream(PL, tu)); if (m.size) uni = m; }
+      const simple = info.two ? null : simpleDecoder(PL, fdict);
+      info.dec = (c) => { if (uni && uni.has(c)) return uni.get(c); return simple ? simple(c) : null; };
+    } catch (_) { info.dec = null; }
     return info;
   }
 
@@ -343,7 +432,7 @@ const HXEdit = (() => {
         const el = { c: codes, g0: glyphs.length }; elems.push(el);
         for (const code of codes) {
           const w = font.w(code), adv = ((w / 1000) * fs + gs.tc + (!font.two && code === 32 ? gs.tw : 0)) * th, gw = (w / 1000) * fs * th;
-          glyphs.push({ x0: x, x1: x + gw, adv });
+          glyphs.push({ x0: x, x1: x + gw, adv, tc: gs.tc * th, u: font.dec ? font.dec(code) : (!font.two && code >= 32 && code < 127 ? String.fromCharCode(code) : null) });
           if (x < xmin) xmin = x; if (x + gw > xmax) xmax = x + gw;
           x += adv;
         }
@@ -359,7 +448,7 @@ const HXEdit = (() => {
         const bx = q.map((p) => p[0]), by = q.map((p) => p[1]);
         run = {
           id: idOf(s), kind: 'text', ranges: [[s, e]], bbox: [Math.min(...bx), Math.min(...by), Math.max(...bx), Math.max(...by)], quad: q, F, fs, th,
-          ys, yh, xmin, xmax, elems, glyphs, two: font.two, exotic: !!font.exotic, op: kind, dq: dq || null, chainedNext: false, vert: font.vert, fill: toHex(gs.fill), pageSize: Math.abs(fs) * scaleOf(F), z: 0
+          ys, yh, xmin, xmax, elems, glyphs, two: font.two, exotic: !!font.exotic, ts: gs.ts, fam: font.fam || 'Helvetica', bold: !!font.bold, italic: !!font.italic, op: kind, dq: dq || null, chainedNext: false, vert: font.vert, fill: toHex(gs.fill), pageSize: Math.abs(fs) * scaleOf(F), z: 0
         };
         runs.push(run);
       } else if (glyphs.length || elems.length) {
@@ -560,6 +649,55 @@ const HXEdit = (() => {
     return seen;
   }
 
+
+  /* ---------- the words of a line of text ---------- */
+  // cutOf(run) -> Set of glyph indexes that are already erased (or null)
+  function lineText(o, cutOf) {
+    let out = '', unk = 0, tot = 0, prev = null;
+    for (const r of o.runs) {
+      const cs = cutOf ? cutOf(r) : null;
+      const F = r.F, ul = Math.hypot(F[0], F[1]) || 1, ux = F[0] / ul, uy = F[1] / ul;
+      for (let i = 0; i < r.glyphs.length; i++) {
+        if (cs && cs.has(i)) continue;
+        const g = r.glyphs[i], st = ap(F, g.x0, 0);
+        let ch = g.u; tot++;
+        if (ch == null || ch === '�') { ch = '?'; unk++; }
+        if (prev && out && !/\s$/.test(out) && ch !== ' ') {
+          const du = (st[0] - prev.end[0]) * ux + (st[1] - prev.end[1]) * uy - prev.tc;
+          if (du > 0.18 * Math.max(r.pageSize, 1)) out += ' ';
+        }
+        out += ch;
+        prev = { end: ap(F, g.x1, 0), tc: g.tc * ul };
+      }
+    }
+    return { text: out, unknown: unk, total: tot };
+  }
+  // how a line looks, so a replacement can be drawn the same way
+  function lineInfo(o, cutOf) {
+    let best = o.runs[0], bn = -1;
+    for (const r of o.runs) { const n = r.glyphs.length; if (n > bn) { bn = n; best = r; } }
+    let first = null;
+    for (const r of o.runs) { const cs = cutOf ? cutOf(r) : null; for (let i = 0; i < r.glyphs.length; i++) if (!(cs && cs.has(i))) { first = { r, i }; break; } if (first) break; }
+    if (!first) first = { r: o.runs[0], i: 0 };
+    const t = lineText(o, cutOf), r0 = first.r;
+    return { ...t, fam: best.fam, bold: best.bold, italic: best.italic, std: stdName(best.fam, best.bold, best.italic), size: r0.pageSize, fill: best.fill || '#000000', F: r0.F, origin: ap(r0.F, r0.glyphs[first.i] ? r0.glyphs[first.i].x0 : 0, r0.ts || 0), vert: !!best.vert };
+  }
+  // characters a standard font can show, by what they look like
+  const LOOKS = { '‐': '-', '‑': '-', '‒': '-', '−': '-', ' ': ' ', ' ': ' ', ' ': ' ', ' ': ' ', '​': '', '′': "'", '″': '"', '⁄': '/', '∕': '/', '×': '×', '≤': '<', '≥': '>', '→': '>', '●': '•', '­': '-' };
+  function fitToFont(font, text) {
+    let set; try { set = new Set(font.getCharacterSet()); } catch (_) { set = null; }
+    let out = '', bad = 0;
+    for (const ch of String(text).normalize('NFC').replace(/[\r\n\t]+/g, ' ')) {
+      const cp = ch.codePointAt(0);
+      if (!set || set.has(cp)) { out += ch; continue; }
+      if (LOOKS[ch] !== undefined) { out += LOOKS[ch]; continue; }
+      const d = ch.normalize('NFD')[0];
+      if (d !== ch && (!set || set.has(d.codePointAt(0)))) { out += d; continue; }
+      out += '?'; bad++;
+    }
+    return { text: out, bad };
+  }
+
   /* ---------- rewriting ---------- */
   const cmText = (X) => `${X.map(fmt).join(' ')} cm`;
   function styleOps(sty, paint) {
@@ -602,7 +740,9 @@ const HXEdit = (() => {
       const uid = o.uid;
       const sub = level.subs.get(o.id);
       if (o.kind === 'text') {
-        const gd = del.has(uid);
+        const tx = ed.txt && ed.txt[uid];
+        const gd = del.has(uid) || !!tx;
+        if (tx && !del.has(uid) && ed.out) ed.out.push({ o, tx });
         for (const r of o.runs) {
           const ruid = ed.prefix + r.id;
           let set = null;
@@ -683,13 +823,13 @@ const HXEdit = (() => {
   }
 
   /* ---------- applying a set of edits to a document ---------- */
-  const emptyEd = () => ({ del: [], cut: {}, xf: {}, sty: {}, add: [] });
-  const isEmptyEd = (ed) => !ed || (!ed.del.length && !Object.keys(ed.cut).length && !Object.keys(ed.xf).length && !Object.keys(ed.sty).length && !ed.add.length);
+  const emptyEd = () => ({ del: [], cut: {}, xf: {}, sty: {}, add: [], txt: {} });
+  const isEmptyEd = (ed) => !ed || (!ed.del.length && !Object.keys(ed.cut).length && !Object.keys(ed.xf).length && !Object.keys(ed.sty).length && !ed.add.length && !Object.keys(ed.txt || {}).length);
   const pageOfId = (id) => { const m = /^p(\d+):/.exec(id); return m ? +m[1] : 0; };
 
   async function applyEdits(PL, doc, ed, assets, hooks = {}) {
     const { PDFName, PDFDict, PDFRawStream } = PL, N = (s) => PDFName.of(s), ctx = doc.context;
-    const byPage = new Map(); const get = (n) => (byPage.get(n) || byPage.set(n, { del: new Set(), cut: {}, xf: {}, sty: {}, add: [], expand: new Set() }).get(n));
+    const byPage = new Map(); const get = (n) => (byPage.get(n) || byPage.set(n, { del: new Set(), cut: {}, xf: {}, sty: {}, txt: {}, add: [], expand: new Set() }).get(n));
     const noteExpand = (n, id) => {                                  // groups that hold edited objects must be opened
       const chain = id.replace(/^p\d+:/, '').split('>'); let pref = '';
       for (let i = 0; i < chain.length - 1; i++) { pref = pref ? `${pref}>${chain[i]}` : chain[i]; get(n).expand.add(pref); }
@@ -698,12 +838,14 @@ const HXEdit = (() => {
     for (const id in ed.cut) { const n = pageOfId(id); if (n) { get(n).cut[id] = ed.cut[id]; noteExpand(n, id); } }
     for (const id in ed.xf) { const n = pageOfId(id); if (n) { get(n).xf[id] = ed.xf[id]; noteExpand(n, id); } }
     for (const id in ed.sty) { const n = pageOfId(id); if (n) { get(n).sty[id] = ed.sty[id]; noteExpand(n, id); } }
+    for (const id in (ed.txt || {})) { const n = pageOfId(id); if (n) { get(n).txt[id] = ed.txt[id]; noteExpand(n, id); } }
     for (const a of ed.add) get(a.page).add.push(a);
-    let uniq = 0, changedAny = false;
+    let uniq = 0, changedAny = false, touchedText = false;
+    const fontCache = new Map();
     for (const [n, pe] of byPage) {
       const idx = n - 1; if (idx < 0 || idx >= doc.getPageCount()) continue;
       const A = await analyzePage(PL, doc, idx, pe.expand);
-      const edIn = { delSet: pe.del, cut: pe.cut, xf: pe.xf, sty: pe.sty, prefix: A.prefix };
+      const edIn = { delSet: pe.del, cut: pe.cut, xf: pe.xf, sty: pe.sty, txt: pe.txt, out: [], prefix: A.prefix };
       let touched = false;
       const pp = privateRes(PL, ctx, A.page.node.normalizedEntries().Resources);
       A.page.node.set(N('Resources'), pp.nr);
@@ -734,8 +876,22 @@ const HXEdit = (() => {
       let newBytes = topRes ? topRes.bytes : A.top.bytes;
       if (topRes) prune(pp.nx, A.top, topRes.reps);
       const wasChanged = newBytes !== A.top.bytes || touched;
-      // additions
+      // changed lines of text: written new, in a standard font, where the old line was
       let tail = '';
+      for (const { o, tx } of edIn.out) {
+        const text = String(tx.t || ''); if (!text.trim()) continue;
+        const cutOf = (r) => { const c = pe.cut[A.prefix + r.id]; if (!c) return null; const set = new Set(); for (const [a, b] of c) for (let i = a; i < b; i++) set.add(i); return set; };
+        const li = lineInfo(o, cutOf), std = STD_NAMES.includes(tx.f) ? tx.f : li.std;
+        let font = fontCache.get(std); if (!font) { font = doc.embedStandardFont(std); fontCache.set(std, font); }
+        if (!pp.nf) { const nf = PL.PDFDict.withContext(ctx), old = pp.nr.lookup(N('Font')); if (old instanceof PL.PDFDict) for (const [k, v] of old.entries()) nf.set(k, v); pp.nr.set(N('Font'), nf); pp.nf = nf; pp.fn = new Map(); }
+        let fname = pp.fn.get(std); if (!fname) { fname = `HxT${pp.fn.size + 1}${Date.now().toString(36)}`; pp.fn.set(std, fname); pp.nf.set(N(fname), font.ref); }
+        const fit = fitToFont(font, text);
+        const F = li.F, ul = Math.hypot(F[0], F[1]) || 1, vl = Math.hypot(F[2], F[3]) || 1;
+        const col = fromHex(tx.c || li.fill) || [0, 0, 0], size = tx.s > 0 ? tx.s : li.size;
+        tail += `q ${col.map((v) => fmt(v / 255)).join(' ')} rg BT /${fname} ${fmt(size)} Tf ${[F[0] / ul, F[1] / ul, F[2] / vl, F[3] / vl, li.origin[0], li.origin[1]].map(fmt).join(' ')} Tm ${font.encodeText(fit.text).toString()} Tj ET Q\n`;
+        touchedText = true;
+      }
+      // additions
       if (pe.add.length) {
         for (const a of pe.add) {
           const asset = assets && assets.get(a.asset); if (!asset) continue;
@@ -829,5 +985,5 @@ const HXEdit = (() => {
     return true;
   }
 
-  return { rangeQuads, mergeCut, glyphsInRect, hitTest, analyzePage, applyEdits, emptyEd, isEmptyEd, mul, inv, ap, pageOfId, strBytes, toHex, fromHex, scaleOf };
+  return { rangeQuads, mergeCut, glyphsInRect, hitTest, analyzePage, applyEdits, lineText, lineInfo, fitToFont, stdName, emptyEd, isEmptyEd, mul, inv, ap, pageOfId, strBytes, toHex, fromHex, scaleOf };
 })();

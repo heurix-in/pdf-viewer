@@ -1207,6 +1207,7 @@ function refreshState() {
   A.dirty = snap() !== A.savedSnap;
   $('docName').classList.toggle('dirty', A.dirty);
   $('ribbonSaveBtn').classList.toggle('dirty', A.dirty);
+  $('saveBtn').classList.toggle('dirty', A.dirty);
   $('undoBtn').disabled = !A.undo.length;
   $('redoBtn').disabled = !A.redo.length;
 }
@@ -1508,7 +1509,9 @@ function setTool(t, force) {
   if (A.tool !== 'select') { hideSelbar(); selectObj(null); clearForeignSel(); closeMenu(); }
   if (A.tool !== 'erase' && A.preview.size) setPreview(new Set());
   if (A.editing) endTextEdit();
-  syncSwatches(); refreshObjbar(); syncLockUI();
+  if (A.mdraft && A.mdraft.tool !== A.tool) measCancel();
+  if (!MEAS_TOOLS.has(A.tool) && !selMeasure()) A.showScale = false;
+  syncSwatches(); refreshObjbar(); syncLockUI(); syncScaleUI();
   if (A.mode === 'edit') edSyncUI();
 }
 function updateHint() {
@@ -1551,6 +1554,7 @@ document.querySelectorAll('.rb-tool').forEach((b) => {
     const t = b.dataset.tool;
     if (['highlight', 'underline', 'strike'].includes(t) && readSelection()) { markSelection(t); return; }
     if (t === 'addimg') { edAddImage(); return; }
+    if (t === 'mscale') { openScaleMenu(b); return; }
     if (t === 'stamp' || t === 'sign') { if (canEdit()) (t === 'stamp' ? openStampMenu : openSignMenu)(b); return; }
     if (t !== 'select' && t !== 'pan' && !canEdit()) return;
     setTool(t, t === 'osel');
@@ -1831,7 +1835,7 @@ function updateBadge() {
   b.hidden = !n; b.textContent = n > 99 ? '99+' : n;
 }
 const sortKey = (a) => a.rects[0] || [0, 0, 0, 0];
-const DRAWINGS = ['rect', 'ellipse', 'cloud', 'arrow', 'line', 'ink'];
+const DRAWINGS = ['rect', 'ellipse', 'cloud', 'arrow', 'line', 'ink', 'dist', 'peri', 'area'];
 const listed = (a) => a.type !== 'stamp' && a.type !== 'signature' && (!DRAWINGS.includes(a.type) || hasComment(a));
 const passFilter = (a) => listed(a) && (A.filter === 'all' || (A.filter === 'withcomment' ? hasComment(a) || a.type === 'text' : A.filter === 'textbox' ? a.type === 'text' : A.filter === 'drawing' ? DRAWINGS.includes(a.type) : a.type === A.filter));
 
@@ -2109,7 +2113,7 @@ async function confirmEncrypted(docId) {
 function annotDocOpened(prep) {
   A.items = prep.items; A.savedSnap = snap(); A.undo = []; A.redo = []; A.hkey = ''; A.foreign = [];
   A.encrypted = A.encrypted || prep.encrypted; A.openId = null; A.pendingNew = null;
-  setTool('select'); updateRibbon(); refreshState(); renderComments(); updateBadge();
+  setTool('select'); measAdoptScale(); updateRibbon(); refreshState(); renderComments(); updateBadge();
   if (prep.checkEncrypted) confirmEncrypted(S.docId);
 }
 
@@ -2117,7 +2121,7 @@ function annotDocClosed() {
   clearTimeout(softTimer); clearTimeout(cmTimer);
   A.items = []; A.undo = []; A.redo = []; A.hkey = ''; A.foreign = []; A.encrypted = false; A.openId = null; A.pendingNew = null;
   existingDocClosed(); A.savedSnap = snap(); A.dirty = false; A.hoverId = null;
-  A.sel = null; A.editing = null; A.op = null; A.draft = null; A.stampSpec = null; A.sigPending = null;
+  A.sel = null; A.editing = null; A.op = null; A.draft = null; A.stampSpec = null; A.sigPending = null; A.mdraft = null; A.scale = { ...DEF_SCALE }; A.showScale = false; $('calDlg').hidden = true;
   $('textEdit').hidden = true; hideObjbar(); closeMenu();
   const pop = $('pop'); pop.hidden = true; pop.replaceChildren(); hideSelbar();
   refreshState(); renderComments(); updateBadge();
@@ -2234,7 +2238,9 @@ const annotApi = { removeMarkups, itemsInBox, visForeign, flushRemovals, hitFore
    - Everything keeps its settings inside the PDF, so it stays editable when the file is reopened.
    ===================================================================== */
 
-const OBJ_TYPES = new Set(['text', 'rect', 'ellipse', 'cloud', 'arrow', 'line', 'ink', 'stamp', 'signature']);
+const OBJ_TYPES = new Set(['text', 'rect', 'ellipse', 'cloud', 'arrow', 'line', 'ink', 'stamp', 'signature', 'dist', 'peri', 'area']);
+const MEAS = new Set(['dist', 'peri', 'area']);                      // measurements
+const MEAS_TOOLS = new Set(['dist', 'peri', 'area', 'calib']);
 const isObj = (a) => OBJ_TYPES.has(a.type);
 const isMarkup = (a) => a.type === 'highlight' || a.type === 'underline' || a.type === 'strike';
 const isVector = (a) => a.type !== 'text' && a.type !== 'stamp' && a.type !== 'signature';
@@ -2465,7 +2471,7 @@ function arrowHead(p0, p1, w) {
 function refreshBBox(a) {
   let pts;
   if (a.type === 'arrow') pts = [...a.pts, ...arrowHead(a.pts[0], a.pts[1], a.width || 2)];
-  else if (a.type === 'line') pts = a.pts;
+  else if (a.type === 'line' || MEAS.has(a.type)) pts = a.pts;
   else if (a.type === 'ink') pts = a.strokes.flat();
   else return;
   let x1 = 1e9, y1 = 1e9, x2 = -1e9, y2 = -1e9;
@@ -2490,6 +2496,8 @@ function drawObject(a, vp, px, py, parts) {
     svgLayer(parts, vp).append(svgEl('rect', { x: b.x, y: b.y, width: b.w, height: b.h, fill: 'rgba(124,58,237,.06)', stroke: '#7c3aed', 'stroke-width': 1.2, 'stroke-dasharray': '4 3' }));
     return;
   }
+
+  if (MEAS.has(a.type)) { drawMeasure(a, vp, px, py, parts); return; }
 
   if (FRAMED.has(a.type)) {
     const fr = frameOf(a), { O, u, v, W, H } = fr;
@@ -2551,7 +2559,7 @@ function handlesFor(a, vp) {
     for (const [name, i, j] of names) out.push({ name, x: xs[i], y: ys[j], cursor: CURSORS[name] });
     return out;
   }
-  if (LINEAR.has(a.type)) return a.pts.map((q, i) => { const v = vp.convertToViewportPoint(q[0], q[1]); return { name: `p${i}`, x: v[0], y: v[1], round: true, cursor: 'crosshair' }; });
+  if (LINEAR.has(a.type) || MEAS.has(a.type)) return a.pts.map((q, i) => { const v = vp.convertToViewportPoint(q[0], q[1]); return { name: `p${i}`, x: v[0], y: v[1], round: true, cursor: 'crosshair' }; });
   if (a.type === 'text' || a.type === 'stamp' || a.type === 'signature') {
     const { O, u, v, W, H } = frameOf(a);
     if (a.type === 'text') { const q = vp.convertToViewportPoint(O[0] + W * u[0] + (H / 2) * v[0], O[1] + W * u[1] + (H / 2) * v[1]); return [{ name: 'e', x: q[0], y: q[1], cursor: 'ew-resize' }]; }
@@ -2598,6 +2606,7 @@ function objHit(a, x, y, tol) {
       const [h1, h2] = arrowHead(p0, p1, a.width || 2);
       return Math.min(distPointSeg(P, p0, p1), distPointSeg(P, h1, p1), distPointSeg(P, h2, p1)) <= w;
     }
+    case 'dist': case 'peri': case 'area': return measHit(a, x, y, tol);
     case 'ink': {
       if (!(x >= r[0] - w && x <= r[2] + w && y >= r[1] - w && y <= r[3] + w)) return false;
       for (const st of a.strokes) for (let i = 0; i < st.length; i++) if (distPointSeg([x, y], st[i], st[Math.min(i + 1, st.length - 1)]) <= w) return true;
@@ -2627,7 +2636,7 @@ function selectObj(id) {
   A.sel = id;
   const now = id && findAnn(id);
   for (const a of [prev, now]) if (a) { const p = S.pages[a.page - 1]; if (p) drawAnnots(p); }
-  syncSwatches(); refreshObjbar();
+  syncSwatches(); refreshObjbar(); syncScaleUI();
 }
 
 /* ---------------------------------------------------------------------
@@ -2659,6 +2668,7 @@ function objPointerDown(e) {
   if (handle) { startResize(e, handle); return true; }
   const pageEl = t.closest?.('.page'); if (!pageEl) return false;
   if (A.tool === 'erase') return beginErase(e, pageEl);
+  if (MEAS_TOOLS.has(A.tool)) return measPointerDown(e, pageEl);
   if (OBJ_TOOLS.has(A.tool)) { if (!canEdit()) return true; return beginDraw(e, pageEl); }
   if (A.tool === 'select') {
     const a = hitObject(e.clientX, e.clientY, t);
@@ -2686,6 +2696,7 @@ function startResize(e, handle) {
 function opMove(e) {
   const op = A.op; if (!op) return;
   if (op.kind === 'erase') { eraseMove(op, e); return; }
+  if (op.kind === 'meas') { measMove(op, e); return; }
   if (op.kind.startsWith('ed')) { edOpMove(op, e); return; }
   const a = op.kind === 'draw' ? A.draft : findAnn(op.id); if (!a) return;
   if (!op.moved && Math.hypot(e.clientX - op.cx, e.clientY - op.cy) < 3) return;
@@ -2697,7 +2708,7 @@ function opMove(e) {
     if (e.shiftKey) { if (Math.abs(dx) > Math.abs(dy)) dy = 0; else dx = 0; }      // Shift keeps the move on one axis
     applyMove(a, op.orig, dx, dy);
   }
-  else if (op.kind === 'resize') applyResize(a, op, cur, e);
+  else if (op.kind === 'resize') { op.shift = e.shiftKey; applyResize(a, op, cur, e); }
   else if (op.kind === 'draw') {
     if (a.type === 'ink') { const st = a.strokes[0], last = st[st.length - 1]; if (Math.hypot(cur[0] - last[0], cur[1] - last[1]) * S.zoom * CSS_UNITS > 1.5) { st.push(cur.map(r2)); refreshBBox(a); } }
     else if (LINEAR.has(a.type)) { a.pts[1] = (e.shiftKey ? snapAngle(a.pts[0], cur) : cur).map(r2); refreshBBox(a); }
@@ -2712,7 +2723,11 @@ function opMove(e) {
 
 function applyResize(a, op, cur) {
   const o = op.orig, vp = vp1(op.p);
-  if (LINEAR.has(a.type)) { const i = +op.h.slice(1); a.pts = clone(o.pts); a.pts[i] = cur.map(r2); refreshBBox(a); return; }
+  if (LINEAR.has(a.type) || MEAS.has(a.type)) {
+    const i = +op.h.slice(1); a.pts = clone(o.pts);
+    let q = cur; if (op.shift && MEAS.has(a.type) && a.pts.length > 1) q = measSnap(a.pts[i > 0 ? i - 1 : 1], cur);
+    a.pts[i] = q.map(r2); refreshBBox(a); return;
+  }
   if (BOXY.has(a.type)) {
     const pr = op.p.div.getBoundingClientRect();
     const px = ((A.lastPtr.x - pr.left) / pr.width) * vp.width, py = ((A.lastPtr.y - pr.top) / pr.height) * vp.height;
@@ -2733,6 +2748,7 @@ function opUp(e) {
   const op = A.op; if (!op) return;
   endOp();
   if (op.kind === 'erase') { finishErase(op); return; }
+  if (op.kind === 'meas') { measUp(op, e); return; }
   if (op.kind.startsWith('ed')) { edOpUp(op, e); return; }
   if (op.kind === 'draw') { finishDraw(op); return; }
   const a = findAnn(op.id);
@@ -2942,6 +2958,7 @@ function refreshObjbar() {
   if (a.type !== 'signature') {
     const sw = el('div', 'sb-swatches'); buildSwatches(sw, (k) => recolor(a, k), a.color); bar.append(sw);
   }
+  if (MEAS.has(a.type)) bar.append(sep(), btn('ob-fs', measInfo(a).text, 'The measured value', () => {}));
   if (isVector(a)) {
     bar.append(sep());
     WIDTHS.forEach((w, i) => bar.append(on(btn('ob-w', `<i style="height:${[1.5, 3, 5][i]}px"></i>`, ['Thin line', 'Medium line', 'Thick line'][i], () => setObjWidth(a, i)), a.width === w)));
@@ -2977,13 +2994,13 @@ function repositionObjbar() {
 /* ---------------------------------------------------------------------
    Colours and line thickness in the ribbon
    --------------------------------------------------------------------- */
-function objContext() { return OBJ_TOOLS.has(A.tool) || !!(A.sel && findAnn(A.sel) && isObj(findAnn(A.sel))); }
+function objContext() { return OBJ_TOOLS.has(A.tool) || MEAS.has(A.tool) || !!(A.sel && findAnn(A.sel) && isObj(findAnn(A.sel))); }
 function syncSwatches() {
   const key = objContext() ? defColorKey() : A.color;
   document.querySelectorAll('#rbSwatches .sw, #sbSwatches .sw').forEach((b) => b.setAttribute('aria-checked', b.dataset.color === key));
   const sel = A.sel && findAnn(A.sel), idx = sel && isVector(sel) ? WIDTHS.indexOf(sel.width) : A.widthIdx;
   document.querySelectorAll('#rbWidths .rb-w').forEach((b) => b.setAttribute('aria-pressed', +b.dataset.w === idx));
-  $('rbWidths').hidden = !(OBJ_TOOLS.has(A.tool) && A.tool !== 'text') && !(sel && isVector(sel));          // thickness only matters for lines and shapes
+  $('rbWidths').hidden = !((OBJ_TOOLS.has(A.tool) && A.tool !== 'text') || MEAS.has(A.tool)) && !(sel && isVector(sel));          // thickness only matters for lines and shapes
 }
 function defColorKey() { const s = A.sel && findAnn(A.sel); return s && isObj(s) && s.type !== 'signature' ? s.color : defColor(A.tool); }
 
@@ -3229,6 +3246,8 @@ async function writeObjectAnnot(a, H) {
     const [p0, p1] = a.pts, [h1, h2] = arrowHead(p0, p1, w), f = (q) => `${r2(q[0])} ${r2(q[1])}`;
     ap = form(rect, [`${rgb} RG ${w} w 1 J 1 j`, `${f(p0)} m ${f(p1)} l S`, ...(arrow ? [`${f(h1)} m ${f(p1)} l ${f(h2)} l S`] : [])].join('\n'));
     extra = { L: [...p0, ...p1].map(r2), LE: ['None', arrow ? 'OpenArrow' : 'None'], BS: { W: w, S: 'S' } };
+  } else if (MEAS.has(a.type)) {
+    ({ subtype, rect, ap, extra, hx } = await measWriteParts(a, H));
   } else if (a.type === 'ink') {
     subtype = 'Ink'; rect = [r[0] - w / 2, r[1] - w / 2, r[2] + w / 2, r[3] + w / 2]; hx.width = w; hx.strokes = a.strokes;
     ap = form(rect, [`${rgb} RG ${w} w 1 J 1 j`, ...a.strokes.flatMap((st) => [...pdfPathOps(smoothCmds(st)), 'S'])].join('\n'));
@@ -3277,6 +3296,7 @@ function readObjectAnnot(d, N, text, PL, base) {
   const item = { ...base, type, rects: [hx.rect], color: COLORS[hxc] ? hxc : (hx.color && COLORS[hx.color] ? hx.color : 'black'), quote: '', replies: [] };
   if (hx.width) item.width = hx.width;
   if (hx.pts) item.pts = hx.pts; if (hx.strokes) item.strokes = hx.strokes;
+  if (MEAS.has(type)) { if (!Array.isArray(hx.pts) || hx.pts.length < 2) return null; if (scaleOk(hx.scale)) item.scale = hx.scale; }
   if (type === 'text') {
     item.size = hx.size || 12; item.rot = hx.rot || 0;
     for (const k of ['bold', 'italic', 'align', 'font', 'border']) if (hx[k]) item[k] = hx[k];

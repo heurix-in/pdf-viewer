@@ -6,13 +6,15 @@
 const ED = { doc: null, docP: null, docId: -1, pages: new Map(), open: new Map(), cycle: null, hoverRaf: 0, warned: false };
 const EDTOL = 5;                                               // click tolerance in screen pixels
 const I6 = () => [1, 0, 0, 1, 0, 0];
-function edEmpty() { return { del: [], cut: {}, xf: {}, sty: {}, add: [] }; }
-function edHas(e) { return !!(e && (e.del.length || e.add.length || Object.keys(e.cut).length || Object.keys(e.xf).length || Object.keys(e.sty).length)); }
+function edEmpty() { return { del: [], cut: {}, xf: {}, sty: {}, add: [], txt: {} }; }
+function edHas(e) { return !!(e && (e.del.length || e.add.length || Object.keys(e.cut).length || Object.keys(e.xf).length || Object.keys(e.sty).length || Object.keys(e.txt || {}).length)); }
+const edTx = () => (A.ed.txt || (A.ed.txt = {}));
 function edKey() { return edHas(A.ed) ? JSON.stringify(A.ed) : ''; }
 
 Object.assign(TOOL_HINT, {
   osel: 'Click an object, or drag a box around several. Double-click a group to open it',
   etext: 'Drag a box over the words you want to erase',
+  etxt: 'Click a line of text to change its words. Enter applies, Esc cancels',
   addimg: 'Click on the page to place the picture, or drag to size it'
 });
 
@@ -68,7 +70,7 @@ function edObjs(n) {
     const gone = new Set(A.ed.del), hasCut = Object.keys(A.ed.cut).length > 0;
     for (const o of info.objs) {
       if (o.hidden || gone.has(o.uid) || (o.kind === 'path' && o.clip)) continue;
-      if (o.kind === 'text') { if (gone.has(o.parentUid)) continue; if (hasCut && !edTextAlive({ runs: o.runs, prefix: info.prefix })) continue; }
+      if (o.kind === 'text') { if (gone.has(o.parentUid)) continue; if (hasCut && !edTx()[o.uid] && !edTextAlive({ runs: o.runs, prefix: info.prefix })) continue; }
       out.push(o);
     }
   }
@@ -78,8 +80,21 @@ function edObjs(n) {
 const edPageOfUid = (uid) => { if (uid.startsWith('add:')) { const a = A.ed.add.find((x) => `add:${x.id}` === uid); return a ? a.page : 0; } return HXEdit.pageOfId(uid); };
 const edFind = (uid) => { const n = edPageOfUid(uid); return edObjs(n).find((o) => o.uid === uid) || null; };
 
+const EDFAM = { Helvetica: 'Helvetica, Arial, "Liberation Sans", sans-serif', Times: '"Times New Roman", Times, "Liberation Serif", serif', Courier: '"Courier New", Courier, "Liberation Mono", monospace' };
+const edFamOf = (std) => (/^Times/.test(std) ? 'Times' : /^Courier/.test(std) ? 'Courier' : 'Helvetica');
+function edTxtWidth(tx, size) {
+  const std = tx.f || 'Helvetica';
+  measureCtx.font = `${/Italic|Oblique/.test(std) ? 'italic ' : ''}${/Bold/.test(std) ? 'bold ' : ''}${size}px ${EDFAM[edFamOf(std)]}`;
+  return measureCtx.measureText(tx.t || '').width;
+}
 function edBox(o) {
   if (o.added) return [o.add.x0, o.add.y0, o.add.x1, o.add.y1];
+  const tx = o.kind === 'text' && A.ed.txt && A.ed.txt[o.uid];
+  if (tx) {
+    const b = o.bbox, F = o.runs[0].F, flat = Math.abs(F[1]) < 1e-6 && Math.abs(F[2]) < 1e-6 && F[0] > 0 && F[3] > 0;
+    if (flat) { const w = edTxtWidth(tx, tx.s > 0 ? tx.s : o.fs); return [b[0], b[1], Math.max(b[2], b[0] + w), b[3]]; }
+    return b;
+  }
   const xf = A.ed.xf[o.uid]; if (!xf) return o.bbox;
   const b = o.bbox, pts = [[b[0], b[1]], [b[2], b[1]], [b[2], b[3]], [b[0], b[3]]].map(([x, y]) => HXEdit.ap(xf, x, y));
   return [Math.min(...pts.map((q) => q[0])), Math.min(...pts.map((q) => q[1])), Math.max(...pts.map((q) => q[0])), Math.max(...pts.map((q) => q[1]))];
@@ -126,6 +141,14 @@ function drawEdit(p, vp, px, py, frag) {
       im.style.cssText = `left:${px(b.x)};top:${py(b.y)};width:${px(b.w)};height:${py(b.h)}`; frag.append(im);
     }
     if (info) {
+      for (const uid in edTx()) {
+        const o = info.byUid.get(uid), tx = A.ed.txt[uid]; if (!o) continue;
+        const F = o.runs[0].F, flat = Math.abs(F[1]) < 1e-6 && Math.abs(F[2]) < 1e-6 && F[0] > 0 && F[3] > 0 && !((p.page.rotate + S.rotation) % 360);
+        if (!flat) { box(o.bbox, 'gone'); continue; }
+        const size = tx.s > 0 ? tx.s : o.fs, b = boxOf(vp, edBox(o)), d = el('div', 'ed-newtxt', { textContent: tx.t });
+        d.style.cssText = `left:${px(b.x)};top:${py(b.y)};min-width:${px(b.w)};height:${py(b.h)};font:${/Italic|Oblique/.test(tx.f) ? 'italic ' : ''}${/Bold/.test(tx.f) ? 'bold ' : ''}calc(var(--total-scale-factor) * ${size}px) ${EDFAM[edFamOf(tx.f || '')]};color:${tx.c || '#000'}`;
+        frag.append(d);
+      }
       for (const uid of A.ed.del) { const o = info.byUid.get(uid); if (o && o.bbox) box(o.bbox, 'gone'); }
       for (const uid in A.ed.cut) {
         const r = info.runs.get(uid); if (!r) continue;
@@ -185,12 +208,19 @@ function edSetSel(next, extra) {
 function edPointerDown(e) {
   const t = e.target, hd = t.closest?.('.ed-h');
   if (hd) return edBeginResize(e, hd);
-  if (!['osel', 'etext', 'addimg'].includes(A.tool)) return false;
+  if (!['osel', 'etext', 'addimg', 'etxt'].includes(A.tool)) return false;
   const pageEl = t.closest?.('.page'); if (!pageEl) return false;
   const p = S.pages[+pageEl.dataset.page - 1]; if (!p?.page) return false;
   e.preventDefault(); closePop(true); try { window.getSelection()?.removeAllRanges(); } catch { /* ignore */ }
   const start = pdfPointAt(p, e.clientX, e.clientY), base = { p, start, cx: e.clientX, cy: e.clientY, moved: false };
   if (A.tool === 'etext') { edPage(p.num); beginOp({ ...base, kind: 'edtext', rb: null, hit: null }); return true; }
+  if (A.tool === 'etxt') {
+    const c = ED.pages.get(p.num);
+    if (!c?.A) { edPage(p.num); toast(c?.err ? 'This page’s content could not be read.' : 'Reading this page… try again in a moment.'); return true; }
+    const hit = edHitAt(p, start[0], start[1]).all.find((o) => o.kind === 'text');
+    if (hit) edStartText(hit, p); else toast('Click on a line of text to change it. Text inside a group: use Select objects and double-click the group first.');
+    return true;
+  }
   if (A.tool === 'addimg') {
     if (!A.edPending) { edAddImage(); return true; }
     beginOp({ ...base, kind: 'edimg', rb: null }); return true;
@@ -369,7 +399,7 @@ function edDeleteSel() {
     const o = edFind(uid); if (!o) continue;
     n++;
     if (o.added) { A.ed.add = A.ed.add.filter((a) => `add:${a.id}` !== uid); continue; }
-    A.ed.del.push(uid); delete A.ed.xf[uid]; delete A.ed.sty[uid];
+    A.ed.del.push(uid); delete A.ed.xf[uid]; delete A.ed.sty[uid]; delete edTx()[uid];
     if (o.kind === 'text') for (const r of o.runs) delete A.ed.cut[`p${HXEdit.pageOfId(uid)}:${r.id}`];
   }
   A.edSel = new Set(); A.edHover = null;
@@ -422,8 +452,9 @@ function refreshEditBar() {
   const btn = (cls, html, title, fn) => { const b = el('button', cls, { type: 'button', innerHTML: html, title }); b.setAttribute('aria-label', title); b.addEventListener('mousedown', (e) => e.preventDefault()); b.addEventListener('click', fn); return b; };
   const label = el('span', 'ob-label');
   label.append(el('b', '', { textContent: objs.length === 1 ? edLabel(objs[0]) : `${objs.length} objects` }));
-  label.append(el('small', '', { textContent: objs.length === 1 && objs[0].kind === 'text' ? 'Press Delete to erase the whole line' : 'Drag to move' }));
+  label.append(el('small', '', { textContent: objs.length === 1 && objs[0].kind === 'text' ? 'Double-click to change the words' : 'Drag to move' }));
   bar.append(label);
+  if (objs.length === 1 && objs[0].kind === 'text') bar.append(el('span', 'sb-sep'), btn('', '<svg><use href="#i-texte"/></svg>Edit text', 'Change the words of this line (Enter)', () => edStartText(objs[0])));
   if (objs.length === 1 && objs[0].kind === 'form' && !objs[0].added) bar.append(el('span', 'sb-sep'), btn('', 'Open group', 'Select the things inside this group (double-click)', () => edOpenGroup(objs[0])));
   bar.append(el('span', 'sb-sep'), btn('ob-del', '<svg><use href="#i-trash"/></svg>Delete', 'Delete (Delete key)', edDeleteSel));
   bar.hidden = false; repositionObjbar();
@@ -450,19 +481,20 @@ viewer.addEventListener('dblclick', (e) => {
   const pageEl = e.target.closest?.('.page'); if (!pageEl) return;
   const p = S.pages[+pageEl.dataset.page - 1]; if (!p?.page) return;
   const pt = pdfPointAt(p, e.clientX, e.clientY), { all } = edHitAt(p, pt[0], pt[1]);
+  const t = all.find((o) => o.kind === 'text'); if (t && (!all.find((o) => o.kind === 'form') || all.indexOf(t) < all.findIndex((o) => o.kind === 'form'))) { e.preventDefault(); edStartText(t, p); return; }
   const f = all.find((o) => o.kind === 'form'); if (f) { e.preventDefault(); edOpenGroup(f); }
 });
 
 /* ---------- hover ---------- */
 viewer.addEventListener('pointermove', (e) => {
-  if (A.mode !== 'edit' || A.tool !== 'osel' || e.buttons || A.op || ED.hoverRaf) return;
+  if (A.mode !== 'edit' || (A.tool !== 'osel' && A.tool !== 'etxt') || e.buttons || A.op || ED.hoverRaf) return;
   const { clientX, clientY, target } = e;
   ED.hoverRaf = requestAnimationFrame(() => {
     ED.hoverRaf = 0;
     const pageEl = target.closest?.('.page'); let uid = null;
     const p = pageEl ? S.pages[+pageEl.dataset.page - 1] : null;
-    if (p?.page && !target.closest('.ed-h')) { const pt = pdfPointAt(p, clientX, clientY); const h = edHitAt(p, pt[0], pt[1]).top; uid = h ? h.uid : null; }
-    viewer.dataset.hover = uid ? 'move' : '';
+    if (p?.page && !target.closest('.ed-h')) { const pt = pdfPointAt(p, clientX, clientY); const hh = edHitAt(p, pt[0], pt[1]); const h = A.tool === 'etxt' ? hh.all.find((o) => o.kind === 'text') : hh.top; uid = h ? h.uid : null; }
+    viewer.dataset.hover = uid && A.tool === 'osel' ? 'move' : '';
     if (uid !== A.edHover) { const before = A.edHover; A.edHover = uid; edRedraw(new Set([before, uid].filter(Boolean).map(edPageOfUid).filter(Boolean))); }
   });
 }, { passive: true });
@@ -518,6 +550,86 @@ $('edSelAll').addEventListener('click', () => {
     }
   });
 });
+
+
+/* ---------- changing the words of a line ---------- */
+const edTE = { o: null, p: null, li: null, orig: null, open: false };
+const WIN_OK = /^[ -~ -ÿ€‚ƒ„…†‡ˆ‰Š‹ŒŽ‘’“”•–—˜™š›œžŸ]$/;
+const edCutOf = (o) => (r) => { const c = A.ed.cut[o.prefix + r.id]; if (!c) return null; const set = new Set(); for (const [a, b] of c) for (let i = a; i < b; i++) set.add(i); return set; };
+const edHexOf = (h) => (/^#[0-9a-f]{6}$/i.test(h || '') ? h.toLowerCase() : '#000000');
+
+function edStartText(o, p) {
+  if (!canEdit() || !o || o.kind !== 'text') return;
+  if (A.mode !== 'edit') setMode('edit');
+  const page = p || S.pages[edPageOfUid(o.uid) - 1]; if (!page?.page) return;
+  const info = ED.pages.get(page.num)?.A; o.prefix = o.prefix || info?.prefix || `p${page.num}:`;
+  const li = HXEdit.lineInfo(o, edCutOf(o)), tx = edTx()[o.uid];
+  if (li.vert) { toast('Vertical text can’t be changed here. You can erase it and add a text box in Comment mode.'); return; }
+  edTE.o = o; edTE.p = page; edTE.li = li; edTE.open = true;
+  edTE.orig = { t: li.text, f: li.std, s: Math.round(li.size * 100) / 100, c: edHexOf(li.fill) };
+  const unreadable = !tx && li.total > 0 && li.unknown > li.total / 2;
+  const cur = tx || edTE.orig;
+  $('edTxtIn').value = unreadable ? '' : cur.t;
+  $('edTxtFam').value = edFamOf(cur.f || li.std); $('edTxtB').setAttribute('aria-pressed', /Bold/.test(cur.f || li.std)); $('edTxtI').setAttribute('aria-pressed', /Italic|Oblique/.test(cur.f || li.std));
+  $('edTxtSize').value = Math.round((cur.s > 0 ? cur.s : li.size) * 10) / 10; $('edTxtCol').value = edHexOf(cur.c || li.fill);
+  $('edTxtNote').className = 'ed-txtnote'; $('edTxtNote').textContent = unreadable ? 'The viewer can’t read the words of this line (its font has no text map). Type the new text.' : 'The line is rewritten in a standard font (Sans, Serif or Mono) of the same size and colour.';
+  A.edSel = new Set([o.uid]); closeMenu(); hideObjbar(); edRedraw([page.num]); edSyncUI();
+  const ed = $('edTxtEd'); ed.hidden = false; edPlaceText();
+  const inp = $('edTxtIn'); inp.focus(); inp.select();
+}
+function edPlaceText() {
+  const ed = $('edTxtEd'); if (ed.hidden || !edTE.o) return;
+  const r = edAnchorRect(), vr = viewer.getBoundingClientRect();
+  const w = ed.offsetWidth, h = ed.offsetHeight;
+  if (!r) { ed.style.left = `${Math.round((innerWidth - w) / 2)}px`; ed.style.top = `${Math.round(vr.top + 20)}px`; return; }
+  let y = r.top - h - 10; if (y < vr.top + 6) y = r.bottom + 10;
+  ed.style.left = `${Math.round(clampN(r.left, 8, innerWidth - w - 8))}px`; ed.style.top = `${Math.round(clampN(y, 8, innerHeight - h - 8))}px`;
+}
+function edTextValues() {
+  const fam = $('edTxtFam').value, b = $('edTxtB').getAttribute('aria-pressed') === 'true', i = $('edTxtI').getAttribute('aria-pressed') === 'true';
+  const size = parseFloat($('edTxtSize').value);
+  return { t: $('edTxtIn').value.replace(/[\r\n\t]+/g, ' '), f: HXEdit.stdName(fam, b, i), s: isFinite(size) && size >= 1 ? Math.min(size, 400) : edTE.orig.s, c: edHexOf($('edTxtCol').value) };
+}
+function edTextNote() {
+  const note = $('edTxtNote'), v = edTextValues(); let bad = '';
+  for (const ch of v.t.normalize('NFC')) if (!WIN_OK.test(ch) && !bad.includes(ch) && !/[‐-‒−­   ​]/.test(ch) && ch.normalize('NFD')[0] === ch) bad += ch;
+  note.className = bad ? 'ed-txtnote warn' : 'ed-txtnote';
+  if (bad) note.textContent = `${[...bad].slice(0, 6).join(' ')} can’t be drawn in this font and will show as “?”. Letters from other scripts need a text box in Comment mode.`;
+}
+function edCloseText(apply) {
+  if (!edTE.open) return;
+  const o = edTE.o, p = edTE.p, v = apply ? edTextValues() : null, orig = edTE.orig;
+  edTE.open = false; $('edTxtEd').hidden = true; edTE.o = null;
+  if (!apply || !o) { edRedraw(p ? [p.num] : []); return; }
+  const had = edTx()[o.uid];
+  const same = v.t === orig.t && v.f === orig.f && Math.abs(v.s - orig.s) < 0.05 && v.c === orig.c;
+  const prev = had || null;
+  if (same) { if (!had) return; pushHistory(); delete A.ed.txt[o.uid]; edChanged([p.num]); toast('The line is back to its original text.'); return; }
+  if (prev && prev.t === v.t && prev.f === v.f && Math.abs((prev.s || 0) - v.s) < 0.05 && prev.c === v.c) return;
+  if (!v.t.trim()) {
+    pushHistory(); delete A.ed.txt[o.uid]; A.ed.del.push(o.uid); A.edSel = new Set();
+    edChanged([p.num]); toast('That line is now empty, so it was deleted. Press Ctrl+Z to bring it back.', 'success'); return;
+  }
+  pushHistory(); A.ed.txt[o.uid] = v; edChanged([p.num]);
+  let bad = 0; for (const ch of v.t.normalize('NFC')) if (!WIN_OK.test(ch) && !/[‐-‒−­   ​]/.test(ch) && ch.normalize('NFD')[0] === ch) bad++;
+  toast(bad ? `Text changed. ${bad} ${bad === 1 ? 'character' : 'characters'} can’t be drawn in this font and became “?”.` : 'Text changed. Press Ctrl+Z to undo.', bad ? '' : 'success');
+}
+$('edTxtIn').addEventListener('input', edTextNote);
+for (const id of ['edTxtFam', 'edTxtSize', 'edTxtCol']) $(id).addEventListener('input', edTextNote);
+for (const id of ['edTxtB', 'edTxtI']) $(id).addEventListener('click', (e) => { const b = e.currentTarget; b.setAttribute('aria-pressed', b.getAttribute('aria-pressed') !== 'true'); $('edTxtIn').focus(); });
+$('edTxtOk').addEventListener('click', () => edCloseText(true));
+$('edTxtCancel').addEventListener('click', () => edCloseText(false));
+$('edTxtEd').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); e.stopPropagation(); edCloseText(true); }
+  else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); edCloseText(false); }
+  else e.stopPropagation();
+});
+document.addEventListener('pointerdown', (e) => {
+  if (!edTE.open || $('edTxtEd').contains(e.target)) return;
+  edCloseText(true);                                           // clicking elsewhere keeps what was typed
+}, true);
+window.addEventListener('resize', edPlaceText);
+viewer.addEventListener('scroll', edPlaceText, { passive: true });
 
 /* ---------- adding a picture ---------- */
 const jpegSize = (b) => {
@@ -584,6 +696,8 @@ document.addEventListener('keydown', (e) => {
     stop(); const d = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[e.key]; edNudge(d[0], d[1], e.shiftKey); return;
   }
   if (k === 'v') { stop(); setTool('osel', true); return; }
+  if (e.key === 'Enter' && A.edSel.size === 1 && A.tool === 'osel') { const o = edFind([...A.edSel][0]); if (o && o.kind === 'text') { stop(); edStartText(o); return; } }
+  if (k === 't') { stop(); setTool('etxt', true); return; }
   if (k === 'x') { stop(); setTool('etext', true); return; }
   if (k === 'p') { stop(); edAddImage(); return; }
   if (k === 'm') { stop(); setTool('pan', true); return; }

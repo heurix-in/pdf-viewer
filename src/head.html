@@ -328,6 +328,7 @@ body.ready .boot-note{display:none}
 .save-btn svg{width:17px;height:17px}
 .save-btn:hover{background:var(--wash-2)}
 .save-btn.dirty{background:var(--mustard);color:var(--ink);box-shadow:0 10px 18px -12px rgba(212,167,44,.95)}
+#saveBtn{margin-right:4px}
 .save-btn.dirty:hover{background:var(--mustard-2);transform:translateY(-1px)}
 .doc-name.dirty::after{content:"";display:inline-block;width:8px;height:8px;margin-left:9px;border-radius:50%;background:var(--mustard);vertical-align:middle;box-shadow:0 0 0 3px rgba(212,167,44,.22)}
 body.ribbon-open .search-panel{top:calc(var(--tb-h) + 58px)}
@@ -619,6 +620,48 @@ body[data-mode="edit"] .rb-author{display:none}
 .rb-e .ed-col{padding:0 3px;gap:4px}
 .ed-col input[type=number]{width:48px}
 body[data-mode="edit"] .an:not(.an-ffr){pointer-events:none}
+
+.ed-txted{position:fixed;z-index:47;width:min(440px,calc(100vw - 16px));padding:10px;border:1px solid var(--line);border-radius:14px;background:#fff;box-shadow:0 22px 44px -18px rgba(28,20,40,.55),0 2px 6px rgba(28,20,40,.08);animation:dropIn .2s var(--ease)}
+.ed-txted[hidden]{display:none}
+.ed-txted>input[type=text]{width:100%;height:38px;border:1.5px solid var(--line-2);border-radius:9px;padding:0 10px;font:inherit;font-size:15px;color:var(--ink);background:#fff}
+.ed-txted>input[type=text]:focus{outline:none;border-color:var(--violet-2);box-shadow:0 0 0 3px rgba(124,58,237,.15)}
+.ed-txtrow{display:flex;align-items:center;gap:6px;margin-top:8px;flex-wrap:wrap}
+.ed-txtrow select,.ed-txtrow input[type=number]{height:30px;border:1.5px solid var(--line);border-radius:8px;padding:0 6px;font:inherit;font-size:13px;color:var(--ink);background:#fff}
+.ed-txtrow input[type=number]{width:62px}
+.ed-txtrow input[type=color]{width:30px;height:30px;padding:0;border:1.5px solid var(--line);border-radius:8px;background:#fff;cursor:pointer}
+.ed-txtrow .tgl{width:30px;height:30px;border:1.5px solid var(--line);border-radius:8px;background:#fff;color:var(--ink-soft);font-size:14px}
+.ed-txtrow .tgl[aria-pressed="true"]{background:var(--wash);color:var(--violet);border-color:var(--violet-2)}
+.ed-txtrow .grow{flex:1}
+.ed-txtnote{margin-top:6px;font-size:12px;line-height:1.35;color:var(--muted);min-height:16px}
+.ed-txtnote.warn{color:#b45309}
+.ed-txtact{display:flex;justify-content:flex-end;gap:8px;margin-top:8px}
+.ed-txtact .primary{height:34px;padding:0 16px;font-size:13.5px;border-radius:10px}
+.ed-newtxt{position:absolute;z-index:6;pointer-events:none;white-space:pre;line-height:1;background:#fff;box-sizing:border-box}
+body[data-tool="etxt"] .page,body[data-tool="etxt"] .textLayer span{cursor:text}
+
+.rb-group[hidden]{display:none}
+.ms-panel{position:fixed;right:18px;top:112px;z-index:31;display:flex;align-items:center;gap:6px;padding:6px 8px 6px 12px;border:1px solid var(--line);border-radius:13px;background:#fff;box-shadow:0 18px 38px -18px rgba(28,20,40,.5),0 2px 6px rgba(28,20,40,.08);animation:dropIn .2s var(--ease)}
+.ms-panel[hidden]{display:none}
+.ms-panel .ms-cap{font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-right:2px}
+.ms-panel .ms-eq{font-weight:700;color:var(--muted)}
+.ms-panel input[type=number]{width:74px;height:30px;border:1.5px solid var(--line);border-radius:8px;padding:0 6px;font:inherit;font-size:13px;color:var(--ink);background:#fff}
+.ms-panel select{height:30px;border:1.5px solid var(--line);border-radius:8px;padding:0 4px;font:inherit;font-size:13px;color:var(--ink);background:#fff}
+.ms-panel .ms-cal{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 10px;margin-left:4px;border-radius:9px;background:var(--wash);color:var(--violet);font-size:12.5px;font-weight:700}
+.ms-panel .ms-cal:hover{background:#ece4fb}
+.ms-panel .ms-cal svg{width:16px;height:16px}
+@media (max-width:900px){.ms-panel{left:8px;right:8px;flex-wrap:wrap}}
+body[data-tool="dist"] .page,body[data-tool="dist"] .textLayer span,
+body[data-tool="peri"] .page,body[data-tool="peri"] .textLayer span,
+body[data-tool="area"] .page,body[data-tool="area"] .textLayer span,
+body[data-tool="calib"] .page,body[data-tool="calib"] .textLayer span{cursor:crosshair}
+.an-meas{position:absolute;transform:translate(-50%,-50%);pointer-events:none;z-index:5;padding:calc(var(--total-scale-factor) * 1.5px) calc(var(--total-scale-factor) * 5px);border:1.2px solid var(--l,#d93025);border-radius:4px;background:rgba(255,255,255,.93);color:var(--l,#d93025);font:700 calc(var(--total-scale-factor) * 10.5px)/1.15 Helvetica,Arial,"Liberation Sans",sans-serif;white-space:nowrap;font-variant-numeric:tabular-nums;box-shadow:0 1px 3px rgba(28,20,40,.18)}
+.an-meas.is-active{box-shadow:0 0 0 2px var(--violet-2)}
+.an-meas.calib{border-style:dashed}
+.an-vtx{position:absolute;pointer-events:none}
+.cal-dlg .cal-title{font-weight:800;font-size:15px;color:var(--ink);margin:0 0 2px}
+.cal-dlg .cal-sub{font-size:13px;color:var(--ink-soft);margin-bottom:8px}
+.cal-dlg .ed-txtrow input[type=number]{width:120px;height:36px;font-size:15px}
+.cal-dlg .ed-txtrow select{height:36px}
 </style>
 </head>
 <body class="no-doc">
@@ -675,6 +718,11 @@ body[data-mode="edit"] .an:not(.an-ffr){pointer-events:none}
     <symbol id="i-alignr" viewBox="0 0 24 24"><path d="M4 6.5h16M10 10.8h10M4 15.2h16M10 19.5h10"/></symbol>
     <symbol id="i-eraser" viewBox="0 0 24 24"><path d="m7.5 19.5-3.2-3.2a2 2 0 0 1 0-2.8l8.9-8.9a2 2 0 0 1 2.8 0l4.2 4.2a2 2 0 0 1 0 2.8l-6.4 6.4Z"/><path d="M9 19.5h10.5M8.5 10.7l6.8 6.8"/></symbol>
     <symbol id="i-image" viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="2"/><circle cx="9" cy="10" r="1.7"/><path d="m4 17 4.6-4.4 3.4 3.2 3-2.8L20 16.5"/></symbol>
+    <symbol id="i-dist" viewBox="0 0 24 24"><path d="M4.2 16.6 16.6 4.2l3.2 3.2L7.4 19.8z"/><path d="m8.6 12.4 1.7 1.7M11.4 9.6l1.2 1.2M14 7l1.7 1.7"/></symbol>
+    <symbol id="i-peri" viewBox="0 0 24 24"><path d="M4.5 18.5 9 8l5.5 6L20 5"/><circle cx="4.5" cy="18.5" r="1.5"/><circle cx="9" cy="8" r="1.5"/><circle cx="14.5" cy="14" r="1.5"/><circle cx="20" cy="5" r="1.5"/></symbol>
+    <symbol id="i-area" viewBox="0 0 24 24"><path d="m5 8.5 8-3.5 6 5-2 9.5H7.2z"/><path d="m8.6 14.2 6-5.2M8 17.8l9.2-8"/></symbol>
+    <symbol id="i-scale" viewBox="0 0 24 24"><path d="M3 14h18v5H3z"/><path d="M7 14v2.6M11 14v2M15 14v2.6M19 14v2"/><path d="M12 3.8v6.4M9.2 7l2.8-2.8L14.8 7"/></symbol>
+    <symbol id="i-texte" viewBox="0 0 24 24"><path d="M3.5 7V5h11v2M9 5v11M6.5 16h5"/><path d="m14.2 19.6 5.4-5.4 1.8 1.8-5.4 5.4-2.5.7z"/></symbol>
     <symbol id="i-texterase" viewBox="0 0 24 24"><path d="M4 18 9.2 5.5 14.4 18M5.8 13.6h6.8"/><path d="m16.2 8.2 4.6 4.6M20.8 8.2l-4.6 4.6"/></symbol>
     <symbol id="i-selall" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2.2" stroke-dasharray="3.2 2.6"/><path d="m8.5 12.3 2.4 2.4 4.6-4.9"/></symbol>
     <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4.2L19.2 9a2.1 2.1 0 0 0-3-3L5.2 17 4 20Z"/><path d="m14.5 7 2.8 2.8"/></symbol>
@@ -729,7 +777,7 @@ body[data-mode="edit"] .an:not(.an-ffr){pointer-events:none}
     <button class="icon-btn doc-only" id="annotBtn" type="button" title="Comment tools" aria-label="Comment tools" aria-pressed="true"><svg><use href="#i-highlight"/></svg></button>
     <button class="icon-btn doc-only" id="searchBtn" type="button" title="Find in document (Ctrl+F)" aria-label="Find in document" aria-expanded="false"><svg><use href="#i-search"/></svg></button>
     <button class="icon-btn doc-only" id="printBtn" type="button" title="Print (Ctrl+P)" aria-label="Print"><svg><use href="#i-print"/></svg></button>
-    <button class="icon-btn doc-only" id="saveBtn" type="button" title="Save (Ctrl+S)" aria-label="Save"><svg><use href="#i-save"/></svg></button>
+    <button class="save-btn doc-only" id="saveBtn" type="button" title="Save (Ctrl+S)" aria-label="Save"><svg><use href="#i-save"/></svg><span>Save</span></button>
     <button class="icon-btn" id="fullscreenBtn" type="button" title="Full screen (F11)" aria-label="Full screen"><svg><use href="#i-expand"/></svg></button>
     <button class="icon-btn" id="keysBtn" type="button" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts"><svg><use href="#i-keys"/></svg></button>
   </div>
@@ -742,6 +790,7 @@ body[data-mode="edit"] .an:not(.an-ffr){pointer-events:none}
   </div>
   <div class="rb-group rb-e" role="group" aria-label="Edit">
     <button class="rb-tool" type="button" data-tool="osel" title="Select objects: click a line of text, a picture or a shape. Drag a box to select several. Then move, resize or delete (V)" aria-pressed="false"><svg><use href="#i-cursor"/></svg><span>Select objects</span></button>
+    <button class="rb-tool" type="button" data-tool="etxt" title="Edit text: click a line of text, then type the new words (T)" aria-pressed="false"><svg><use href="#i-texte"/></svg><span>Edit text</span></button>
     <button class="rb-tool" type="button" data-tool="etext" title="Erase text: drag a box over the words you want to remove from the PDF (X)" aria-pressed="false"><svg><use href="#i-texterase"/></svg><span>Erase text</span></button>
     <button class="rb-tool" type="button" data-tool="pan" title="Pan: drag the page to move around (M)" aria-pressed="false"><svg><use href="#i-hand"/></svg><span>Pan</span></button>
   </div>
@@ -775,6 +824,12 @@ body[data-mode="edit"] .an:not(.an-ffr){pointer-events:none}
     <button class="rb-tool" type="button" data-tool="ink" title="Freehand drawing (D)" aria-pressed="false"><svg><use href="#i-pen"/></svg><span>Draw</span></button>
     <button class="rb-tool" type="button" data-tool="stamp" data-menu="stamp" title="Stamps: approved, draft, date and name…" aria-pressed="false" aria-haspopup="menu"><svg><use href="#i-stamp"/></svg><span>Stamp</span></button>
     <button class="rb-tool" type="button" data-tool="sign" data-menu="sign" title="Add your signature (G)" aria-pressed="false" aria-haspopup="menu"><svg><use href="#i-sign"/></svg><span>Sign</span></button>
+  </div>
+  <div class="rb-group rb-c rb-ms" role="group" aria-label="Measure">
+    <button class="rb-tool" type="button" data-tool="dist" title="Distance: measure the straight-line distance between two points. Click and drag, or click twice. Hold Shift to lock to horizontal, vertical or 45°" aria-pressed="false"><svg><use href="#i-dist"/></svg><span>Distance</span></button>
+    <button class="rb-tool" type="button" data-tool="peri" title="Perimeter: measure the total length of connected segments. Click each point, double-click to finish. Hold Shift to lock the angle" aria-pressed="false"><svg><use href="#i-peri"/></svg><span>Perimeter</span></button>
+    <button class="rb-tool" type="button" data-tool="area" title="Area: measure the area inside a shape. Click each corner, double-click to finish. Hold Shift to lock the angle" aria-pressed="false"><svg><use href="#i-area"/></svg><span>Area</span></button>
+    <button class="rb-tool" type="button" data-tool="mscale" data-menu="scale" id="msScaleBtn" aria-haspopup="menu" title="Scale and calibration (Ctrl+Shift+C)"><svg><use href="#i-scale"/></svg><span id="msScaleLbl">Scale</span></button>
   </div>
   <div class="rb-group rb-c" role="group" aria-label="Remove markups">
     <button class="rb-tool" type="button" data-tool="erase" title="Remove markups: click one, or drag a box around several (E)" aria-pressed="false"><svg><use href="#i-eraser"/></svg><span>Remove</span></button>
@@ -884,7 +939,9 @@ body[data-mode="edit"] .an:not(.an-ffr){pointer-events:none}
       <section><h3>View</h3>
         <dl><dt><kbd>Ctrl</kbd><kbd>+</kbd> <kbd>−</kbd></dt><dd>Zoom in / out</dd><dt><kbd>Ctrl</kbd> + wheel</dt><dd>Zoom at pointer</dd><dt><kbd>Ctrl</kbd><kbd>0</kbd></dt><dd>Fit width</dd><dt><kbd>Ctrl</kbd><kbd>1</kbd></dt><dd>Actual size</dd><dt><kbd>Ctrl</kbd><kbd>2</kbd></dt><dd>Fit page</dd><dt><kbd>M</kbd></dt><dd>Pan tool (hand)</dd><dt><kbd>Space</kbd> + drag</dt><dd>Pan for a moment</dd><dt>Middle button + drag</dt><dd>Pan</dd><dt><kbd>R</kbd> / <kbd>Shift</kbd><kbd>R</kbd></dt><dd>Rotate</dd><dt><kbd>F11</kbd></dt><dd>Full screen</dd></dl></section>
       <section><h3>Edit mode</h3>
-        <dl><dt><kbd>V</kbd></dt><dd>Select objects</dd><dt><kbd>X</kbd></dt><dd>Erase text (drag a box)</dd><dt><kbd>P</kbd></dt><dd>Add an image</dd><dt><kbd>Shift</kbd> + click</dt><dd>Add to the selection</dd><dt><kbd>Alt</kbd> + click</dt><dd>Pick what is underneath</dd><dt><kbd>Del</kbd></dt><dd>Delete the selection</dd><dt><kbd>←</kbd><kbd>↑</kbd><kbd>→</kbd><kbd>↓</kbd></dt><dd>Nudge (Shift = 10 px)</dd></dl></section>
+        <dl><dt><kbd>V</kbd></dt><dd>Select objects</dd><dt><kbd>T</kbd></dt><dd>Edit text (click a line)</dd><dt><kbd>Enter</kbd></dt><dd>Edit the selected line</dd><dt><kbd>X</kbd></dt><dd>Erase text (drag a box)</dd><dt><kbd>P</kbd></dt><dd>Add an image</dd><dt><kbd>Shift</kbd> + click</dt><dd>Add to the selection</dd><dt><kbd>Alt</kbd> + click</dt><dd>Pick what is underneath</dd><dt><kbd>Del</kbd></dt><dd>Delete the selection</dd><dt><kbd>←</kbd><kbd>↑</kbd><kbd>→</kbd><kbd>↓</kbd></dt><dd>Nudge (Shift = 10 px)</dd></dl></section>
+      <section><h3>Measure (Comment mode)</h3>
+        <dl><dt><kbd>Shift</kbd> + draw</dt><dd>Lock to 0°, 45°, 90°</dd><dt><kbd>Enter</kbd> / double-click</dt><dd>Finish perimeter or area</dd><dt><kbd>Backspace</kbd></dt><dd>Remove the last point</dd><dt><kbd>Esc</kbd></dt><dd>Cancel the measurement</dd><dt><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>C</kbd></dt><dd>Calibrate the scale</dd></dl></section>
     </div>
   </div>
 </div>
@@ -900,6 +957,34 @@ body[data-mode="edit"] .an:not(.an-ffr){pointer-events:none}
 </div>
 
 <div class="pop" id="pop" role="dialog" aria-label="Comment" hidden></div>
+<div class="ed-txted" id="edTxtEd" role="dialog" aria-label="Edit text" hidden>
+  <input type="text" id="edTxtIn" spellcheck="false" autocomplete="off" aria-label="Text of this line">
+  <div class="ed-txtrow">
+    <select id="edTxtFam" aria-label="Font" title="Font"><option value="Helvetica">Sans</option><option value="Times">Serif</option><option value="Courier">Mono</option></select>
+    <button class="tgl" id="edTxtB" type="button" aria-pressed="false" title="Bold"><b>B</b></button>
+    <button class="tgl" id="edTxtI" type="button" aria-pressed="false" title="Italic"><i>I</i></button>
+    <input type="number" id="edTxtSize" min="3" max="200" step="0.5" aria-label="Size" title="Size (points)">
+    <input type="color" id="edTxtCol" aria-label="Colour" title="Colour">
+  </div>
+  <div class="ed-txtnote" id="edTxtNote"></div>
+  <div class="ed-txtact"><button class="ghost sm" id="edTxtCancel" type="button">Cancel</button><button class="primary" id="edTxtOk" type="button">Apply</button></div>
+</div>
+<div class="ms-panel" id="msScale" role="group" aria-label="Measurement scale" hidden>
+  <span class="ms-cap">Scale</span>
+  <input type="number" id="msPv" min="0" step="any" aria-label="Length on the page" title="Length on the page">
+  <select id="msPu" aria-label="Unit on the page" title="Unit on the page"></select>
+  <span class="ms-eq">=</span>
+  <input type="number" id="msRv" min="0" step="any" aria-label="Real length" title="Real length">
+  <select id="msRu" aria-label="Real unit" title="Real unit (the unit the measurements are shown in)"></select>
+  <button class="ms-cal" id="msCal" type="button" title="Pick two points with a known length to set the scale (Ctrl+Shift+C)"><svg><use href="#i-scale"/></svg>Calibrate</button>
+</div>
+<div class="ed-txted cal-dlg" id="calDlg" role="dialog" aria-label="Set the scale" hidden>
+  <div class="cal-title">Set the scale</div>
+  <div class="cal-sub">The line you drew is <b id="calLen"></b> long on the page. How long is it in real life?</div>
+  <div class="ed-txtrow"><input type="number" id="calReal" min="0" step="any" aria-label="Real length" placeholder="Real length"><select id="calUnit" aria-label="Unit"></select></div>
+  <div class="ed-txtnote" id="calNote"></div>
+  <div class="ed-txtact"><button class="ghost sm" id="calCancel" type="button">Cancel</button><button class="primary" id="calOk" type="button">Set scale</button></div>
+</div>
 <div class="objbar" id="objbar" role="toolbar" aria-label="Edit the selected item" hidden></div>
 <div class="menu" id="menu" role="menu" hidden></div>
 <textarea class="textedit" id="textEdit" aria-label="Text box" spellcheck="false" hidden></textarea>

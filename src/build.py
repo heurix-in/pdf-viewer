@@ -1,7 +1,7 @@
 import re,base64,hashlib,sys,os
 d=os.path.dirname(os.path.abspath(__file__))
 head=open(d+'/head.html').read(); mid=open(d+'/mid.html').read(); tail=open(d+'/tail.html').read()
-parts=['module.js']+([p for p in sys.argv[1:]] or ['pdfedit.js','edit-ui.js'])
+parts=['module.js']+([p for p in sys.argv[1:]] or ['pdfedit.js','edit-ui.js','measure.js'])
 # extra modules are concatenated BEFORE the final bootstrap marker in module.js
 mod=open(d+'/module.js').read()
 extra=''.join(open(d+'/'+p).read()+'\n' for p in parts[1:])

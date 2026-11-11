@@ -1,6 +1,8 @@
 import struct, io
 from PIL import Image
-ICON_SRC='/home/claude/w/assets/icon256.png'
+import os
+HERE=os.path.dirname(os.path.abspath(__file__))
+ICON_SRC=os.path.join(HERE,'..','assets','icon256.png')
 def u16(s): return s.encode('utf-16-le')
 def pad4(b): return b+b'\0'*((-len(b))%4)
 
@@ -36,9 +38,9 @@ def vblock(key,value=b'',vtype=0,children=b'',vlen=None):
     body=head+value
     if children: body=pad4(body)+children
     return struct.pack('<H',len(body))+body[2:]
-ver=(1,0,0,0)
+ver=(1,1,0,0)
 ffi=struct.pack('<IIIIIIIIIIIII',0xFEEF04BD,0x10000,(ver[0]<<16)|ver[1],(ver[2]<<16)|ver[3],(ver[0]<<16)|ver[1],(ver[2]<<16)|ver[3],0x3f,0,0x40004,1,0,0,0)
-strs=[('CompanyName','Heurix'),('FileDescription','Heurix PDF Viewer'),('FileVersion','1.0.0.0'),('InternalName','Heurix-PDF-Viewer'),('OriginalFilename','Heurix-PDF-Viewer.exe'),('ProductName','Heurix PDF Viewer'),('ProductVersion','1.0.0.0'),('LegalCopyright','Heurix')]
+strs=[('CompanyName','Heurix'),('FileDescription','Heurix PDF Viewer'),('FileVersion','1.1.0.0'),('InternalName','Heurix-PDF-Viewer'),('OriginalFilename','Heurix-PDF-Viewer.exe'),('ProductName','Heurix PDF Viewer'),('ProductVersion','1.1.0.0'),('LegalCopyright','Heurix')]
 st=b''
 for k,v in strs:
     val=u16(v)+b'\0\0'
@@ -91,4 +93,4 @@ out+=bytes(buf)
 for o in relocs: out+=struct.pack('<IIH',o,0,3)   # symbol 0 = .rsrc, ADDR32NB
 out+=struct.pack('<8sIhHBB',b'.rsrc',0,1,0,3,1)+struct.pack('<IHHIHBxxx',total,nrel,0,0,1,0)
 out+=struct.pack('<I',4)
-open('resource_windows_amd64.syso','wb').write(out); print('syso',len(out))
+open(os.path.join(HERE,'resource_windows_amd64.syso'),'wb').write(out); print('syso',len(out))

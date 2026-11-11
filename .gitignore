@@ -1,0 +1,4 @@
+windows/shell.html
+windows/viewer.html
+windows/*.syso
+__pycache__/

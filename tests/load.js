@@ -1,8 +1,12 @@
-const vm=require('vm'),fs=require('fs');
+const vm=require('vm'),fs=require('fs'),zlib=require('zlib'),path=require('path');
+const root=path.join(__dirname,'..');
+const mid=fs.readFileSync(path.join(root,'src/mid.html'),'utf8');
+const m=/<script type="text\/plain" id="pdflib-src">([\s\S]*?)<\/script>/.exec(mid);
+const pdflibSrc=zlib.gunzipSync(Buffer.from(m[1].trim(),'base64')).toString('utf8');
 const ctx={console,TextEncoder,TextDecoder,setTimeout,clearTimeout,Uint8Array,ArrayBuffer};
 ctx.window=ctx;ctx.self=ctx;vm.createContext(ctx);
-vm.runInContext(fs.readFileSync('/home/claude/w/node/pdflib-src.js','utf8'),ctx);
+vm.runInContext(pdflibSrc,ctx);
 const PL=ctx.PDFLib;
-const src=fs.readFileSync('/home/claude/w/src/pdfedit.js','utf8')+';this.HXEdit=HXEdit;';
+const src=fs.readFileSync(path.join(root,'src/pdfedit.js'),'utf8')+';this.HXEdit=HXEdit;';
 vm.runInContext(src,ctx);
 module.exports={PL,HX:ctx.HXEdit};

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-EdFiRtBdYYZFA32a6aODExlmrFsGAzQEdvpCjOMzjNY=' blob: 'wasm-unsafe-eval'; style-src 'unsafe-inline' https://fonts.googleapis.com; img-src data: blob:; font-src data: https://fonts.gstatic.com; worker-src blob:; connect-src data: blob: 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-bJfOiBsjvA13I03MBk1UyZrqsP9a7ab3mAaC/Ybyya8=' blob: 'wasm-unsafe-eval'; style-src 'unsafe-inline' https://fonts.googleapis.com; img-src data: blob:; font-src data: https://fonts.gstatic.com; worker-src blob:; connect-src data: blob: 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="description" content="Heurix PDF Viewer — read, search and print PDFs in your browser. Files never leave your computer.">
 <meta name="theme-color" content="#5b21b6">
 <title>Heurix PDF Viewer</title>
@@ -328,6 +328,7 @@ body.ready .boot-note{display:none}
 .save-btn svg{width:17px;height:17px}
 .save-btn:hover{background:var(--wash-2)}
 .save-btn.dirty{background:var(--mustard);color:var(--ink);box-shadow:0 10px 18px -12px rgba(212,167,44,.95)}
+#saveBtn{margin-right:4px}
 .save-btn.dirty:hover{background:var(--mustard-2);transform:translateY(-1px)}
 .doc-name.dirty::after{content:"";display:inline-block;width:8px;height:8px;margin-left:9px;border-radius:50%;background:var(--mustard);vertical-align:middle;box-shadow:0 0 0 3px rgba(212,167,44,.22)}
 body.ribbon-open .search-panel{top:calc(var(--tb-h) + 58px)}
@@ -619,6 +620,48 @@ body[data-mode="edit"] .rb-author{display:none}
 .rb-e .ed-col{padding:0 3px;gap:4px}
 .ed-col input[type=number]{width:48px}
 body[data-mode="edit"] .an:not(.an-ffr){pointer-events:none}
+
+.ed-txted{position:fixed;z-index:47;width:min(440px,calc(100vw - 16px));padding:10px;border:1px solid var(--line);border-radius:14px;background:#fff;box-shadow:0 22px 44px -18px rgba(28,20,40,.55),0 2px 6px rgba(28,20,40,.08);animation:dropIn .2s var(--ease)}
+.ed-txted[hidden]{display:none}
+.ed-txted>input[type=text]{width:100%;height:38px;border:1.5px solid var(--line-2);border-radius:9px;padding:0 10px;font:inherit;font-size:15px;color:var(--ink);background:#fff}
+.ed-txted>input[type=text]:focus{outline:none;border-color:var(--violet-2);box-shadow:0 0 0 3px rgba(124,58,237,.15)}
+.ed-txtrow{display:flex;align-items:center;gap:6px;margin-top:8px;flex-wrap:wrap}
+.ed-txtrow select,.ed-txtrow input[type=number]{height:30px;border:1.5px solid var(--line);border-radius:8px;padding:0 6px;font:inherit;font-size:13px;color:var(--ink);background:#fff}
+.ed-txtrow input[type=number]{width:62px}
+.ed-txtrow input[type=color]{width:30px;height:30px;padding:0;border:1.5px solid var(--line);border-radius:8px;background:#fff;cursor:pointer}
+.ed-txtrow .tgl{width:30px;height:30px;border:1.5px solid var(--line);border-radius:8px;background:#fff;color:var(--ink-soft);font-size:14px}
+.ed-txtrow .tgl[aria-pressed="true"]{background:var(--wash);color:var(--violet);border-color:var(--violet-2)}
+.ed-txtrow .grow{flex:1}
+.ed-txtnote{margin-top:6px;font-size:12px;line-height:1.35;color:var(--muted);min-height:16px}
+.ed-txtnote.warn{color:#b45309}
+.ed-txtact{display:flex;justify-content:flex-end;gap:8px;margin-top:8px}
+.ed-txtact .primary{height:34px;padding:0 16px;font-size:13.5px;border-radius:10px}
+.ed-newtxt{position:absolute;z-index:6;pointer-events:none;white-space:pre;line-height:1;background:#fff;box-sizing:border-box}
+body[data-tool="etxt"] .page,body[data-tool="etxt"] .textLayer span{cursor:text}
+
+.rb-group[hidden]{display:none}
+.ms-panel{position:fixed;right:18px;top:112px;z-index:31;display:flex;align-items:center;gap:6px;padding:6px 8px 6px 12px;border:1px solid var(--line);border-radius:13px;background:#fff;box-shadow:0 18px 38px -18px rgba(28,20,40,.5),0 2px 6px rgba(28,20,40,.08);animation:dropIn .2s var(--ease)}
+.ms-panel[hidden]{display:none}
+.ms-panel .ms-cap{font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-right:2px}
+.ms-panel .ms-eq{font-weight:700;color:var(--muted)}
+.ms-panel input[type=number]{width:74px;height:30px;border:1.5px solid var(--line);border-radius:8px;padding:0 6px;font:inherit;font-size:13px;color:var(--ink);background:#fff}
+.ms-panel select{height:30px;border:1.5px solid var(--line);border-radius:8px;padding:0 4px;font:inherit;font-size:13px;color:var(--ink);background:#fff}
+.ms-panel .ms-cal{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 10px;margin-left:4px;border-radius:9px;background:var(--wash);color:var(--violet);font-size:12.5px;font-weight:700}
+.ms-panel .ms-cal:hover{background:#ece4fb}
+.ms-panel .ms-cal svg{width:16px;height:16px}
+@media (max-width:900px){.ms-panel{left:8px;right:8px;flex-wrap:wrap}}
+body[data-tool="dist"] .page,body[data-tool="dist"] .textLayer span,
+body[data-tool="peri"] .page,body[data-tool="peri"] .textLayer span,
+body[data-tool="area"] .page,body[data-tool="area"] .textLayer span,
+body[data-tool="calib"] .page,body[data-tool="calib"] .textLayer span{cursor:crosshair}
+.an-meas{position:absolute;transform:translate(-50%,-50%);pointer-events:none;z-index:5;padding:calc(var(--total-scale-factor) * 1.5px) calc(var(--total-scale-factor) * 5px);border:1.2px solid var(--l,#d93025);border-radius:4px;background:rgba(255,255,255,.93);color:var(--l,#d93025);font:700 calc(var(--total-scale-factor) * 10.5px)/1.15 Helvetica,Arial,"Liberation Sans",sans-serif;white-space:nowrap;font-variant-numeric:tabular-nums;box-shadow:0 1px 3px rgba(28,20,40,.18)}
+.an-meas.is-active{box-shadow:0 0 0 2px var(--violet-2)}
+.an-meas.calib{border-style:dashed}
+.an-vtx{position:absolute;pointer-events:none}
+.cal-dlg .cal-title{font-weight:800;font-size:15px;color:var(--ink);margin:0 0 2px}
+.cal-dlg .cal-sub{font-size:13px;color:var(--ink-soft);margin-bottom:8px}
+.cal-dlg .ed-txtrow input[type=number]{width:120px;height:36px;font-size:15px}
+.cal-dlg .ed-txtrow select{height:36px}
 </style>
 </head>
 <body class="no-doc">
@@ -675,6 +718,11 @@ body[data-mode="edit"] .an:not(.an-ffr){pointer-events:none}
     <symbol id="i-alignr" viewBox="0 0 24 24"><path d="M4 6.5h16M10 10.8h10M4 15.2h16M10 19.5h10"/></symbol>
     <symbol id="i-eraser" viewBox="0 0 24 24"><path d="m7.5 19.5-3.2-3.2a2 2 0 0 1 0-2.8l8.9-8.9a2 2 0 0 1 2.8 0l4.2 4.2a2 2 0 0 1 0 2.8l-6.4 6.4Z"/><path d="M9 19.5h10.5M8.5 10.7l6.8 6.8"/></symbol>
     <symbol id="i-image" viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="2"/><circle cx="9" cy="10" r="1.7"/><path d="m4 17 4.6-4.4 3.4 3.2 3-2.8L20 16.5"/></symbol>
+    <symbol id="i-dist" viewBox="0 0 24 24"><path d="M4.2 16.6 16.6 4.2l3.2 3.2L7.4 19.8z"/><path d="m8.6 12.4 1.7 1.7M11.4 9.6l1.2 1.2M14 7l1.7 1.7"/></symbol>
+    <symbol id="i-peri" viewBox="0 0 24 24"><path d="M4.5 18.5 9 8l5.5 6L20 5"/><circle cx="4.5" cy="18.5" r="1.5"/><circle cx="9" cy="8" r="1.5"/><circle cx="14.5" cy="14" r="1.5"/><circle cx="20" cy="5" r="1.5"/></symbol>
+    <symbol id="i-area" viewBox="0 0 24 24"><path d="m5 8.5 8-3.5 6 5-2 9.5H7.2z"/><path d="m8.6 14.2 6-5.2M8 17.8l9.2-8"/></symbol>
+    <symbol id="i-scale" viewBox="0 0 24 24"><path d="M3 14h18v5H3z"/><path d="M7 14v2.6M11 14v2M15 14v2.6M19 14v2"/><path d="M12 3.8v6.4M9.2 7l2.8-2.8L14.8 7"/></symbol>
+    <symbol id="i-texte" viewBox="0 0 24 24"><path d="M3.5 7V5h11v2M9 5v11M6.5 16h5"/><path d="m14.2 19.6 5.4-5.4 1.8 1.8-5.4 5.4-2.5.7z"/></symbol>
     <symbol id="i-texterase" viewBox="0 0 24 24"><path d="M4 18 9.2 5.5 14.4 18M5.8 13.6h6.8"/><path d="m16.2 8.2 4.6 4.6M20.8 8.2l-4.6 4.6"/></symbol>
     <symbol id="i-selall" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2.2" stroke-dasharray="3.2 2.6"/><path d="m8.5 12.3 2.4 2.4 4.6-4.9"/></symbol>
     <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4.2L19.2 9a2.1 2.1 0 0 0-3-3L5.2 17 4 20Z"/><path d="m14.5 7 2.8 2.8"/></symbol>
@@ -729,7 +777,7 @@ body[data-mode="edit"] .an:not(.an-ffr){pointer-events:none}
     <button class="icon-btn doc-only" id="annotBtn" type="button" title="Comment tools" aria-label="Comment tools" aria-pressed="true"><svg><use href="#i-highlight"/></svg></button>
     <button class="icon-btn doc-only" id="searchBtn" type="button" title="Find in document (Ctrl+F)" aria-label="Find in document" aria-expanded="false"><svg><use href="#i-search"/></svg></button>
     <button class="icon-btn doc-only" id="printBtn" type="button" title="Print (Ctrl+P)" aria-label="Print"><svg><use href="#i-print"/></svg></button>
-    <button class="icon-btn doc-only" id="saveBtn" type="button" title="Save (Ctrl+S)" aria-label="Save"><svg><use href="#i-save"/></svg></button>
+    <button class="save-btn doc-only" id="saveBtn" type="button" title="Save (Ctrl+S)" aria-label="Save"><svg><use href="#i-save"/></svg><span>Save</span></button>
     <button class="icon-btn" id="fullscreenBtn" type="button" title="Full screen (F11)" aria-label="Full screen"><svg><use href="#i-expand"/></svg></button>
     <button class="icon-btn" id="keysBtn" type="button" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts"><svg><use href="#i-keys"/></svg></button>
   </div>
@@ -742,6 +790,7 @@ body[data-mode="edit"] .an:not(.an-ffr){pointer-events:none}
   </div>
   <div class="rb-group rb-e" role="group" aria-label="Edit">
     <button class="rb-tool" type="button" data-tool="osel" title="Select objects: click a line of text, a picture or a shape. Drag a box to select several. Then move, resize or delete (V)" aria-pressed="false"><svg><use href="#i-cursor"/></svg><span>Select objects</span></button>
+    <button class="rb-tool" type="button" data-tool="etxt" title="Edit text: click a line of text, then type the new words (T)" aria-pressed="false"><svg><use href="#i-texte"/></svg><span>Edit text</span></button>
     <button class="rb-tool" type="button" data-tool="etext" title="Erase text: drag a box over the words you want to remove from the PDF (X)" aria-pressed="false"><svg><use href="#i-texterase"/></svg><span>Erase text</span></button>
     <button class="rb-tool" type="button" data-tool="pan" title="Pan: drag the page to move around (M)" aria-pressed="false"><svg><use href="#i-hand"/></svg><span>Pan</span></button>
   </div>
@@ -775,6 +824,12 @@ body[data-mode="edit"] .an:not(.an-ffr){pointer-events:none}
     <button class="rb-tool" type="button" data-tool="ink" title="Freehand drawing (D)" aria-pressed="false"><svg><use href="#i-pen"/></svg><span>Draw</span></button>
     <button class="rb-tool" type="button" data-tool="stamp" data-menu="stamp" title="Stamps: approved, draft, date and name…" aria-pressed="false" aria-haspopup="menu"><svg><use href="#i-stamp"/></svg><span>Stamp</span></button>
     <button class="rb-tool" type="button" data-tool="sign" data-menu="sign" title="Add your signature (G)" aria-pressed="false" aria-haspopup="menu"><svg><use href="#i-sign"/></svg><span>Sign</span></button>
+  </div>
+  <div class="rb-group rb-c rb-ms" role="group" aria-label="Measure">
+    <button class="rb-tool" type="button" data-tool="dist" title="Distance: measure the straight-line distance between two points. Click and drag, or click twice. Hold Shift to lock to horizontal, vertical or 45°" aria-pressed="false"><svg><use href="#i-dist"/></svg><span>Distance</span></button>
+    <button class="rb-tool" type="button" data-tool="peri" title="Perimeter: measure the total length of connected segments. Click each point, double-click to finish. Hold Shift to lock the angle" aria-pressed="false"><svg><use href="#i-peri"/></svg><span>Perimeter</span></button>
+    <button class="rb-tool" type="button" data-tool="area" title="Area: measure the area inside a shape. Click each corner, double-click to finish. Hold Shift to lock the angle" aria-pressed="false"><svg><use href="#i-area"/></svg><span>Area</span></button>
+    <button class="rb-tool" type="button" data-tool="mscale" data-menu="scale" id="msScaleBtn" aria-haspopup="menu" title="Scale and calibration (Ctrl+Shift+C)"><svg><use href="#i-scale"/></svg><span id="msScaleLbl">Scale</span></button>
   </div>
   <div class="rb-group rb-c" role="group" aria-label="Remove markups">
     <button class="rb-tool" type="button" data-tool="erase" title="Remove markups: click one, or drag a box around several (E)" aria-pressed="false"><svg><use href="#i-eraser"/></svg><span>Remove</span></button>
@@ -884,7 +939,9 @@ body[data-mode="edit"] .an:not(.an-ffr){pointer-events:none}
       <section><h3>View</h3>
         <dl><dt><kbd>Ctrl</kbd><kbd>+</kbd> <kbd>−</kbd></dt><dd>Zoom in / out</dd><dt><kbd>Ctrl</kbd> + wheel</dt><dd>Zoom at pointer</dd><dt><kbd>Ctrl</kbd><kbd>0</kbd></dt><dd>Fit width</dd><dt><kbd>Ctrl</kbd><kbd>1</kbd></dt><dd>Actual size</dd><dt><kbd>Ctrl</kbd><kbd>2</kbd></dt><dd>Fit page</dd><dt><kbd>M</kbd></dt><dd>Pan tool (hand)</dd><dt><kbd>Space</kbd> + drag</dt><dd>Pan for a moment</dd><dt>Middle button + drag</dt><dd>Pan</dd><dt><kbd>R</kbd> / <kbd>Shift</kbd><kbd>R</kbd></dt><dd>Rotate</dd><dt><kbd>F11</kbd></dt><dd>Full screen</dd></dl></section>
       <section><h3>Edit mode</h3>
-        <dl><dt><kbd>V</kbd></dt><dd>Select objects</dd><dt><kbd>X</kbd></dt><dd>Erase text (drag a box)</dd><dt><kbd>P</kbd></dt><dd>Add an image</dd><dt><kbd>Shift</kbd> + click</dt><dd>Add to the selection</dd><dt><kbd>Alt</kbd> + click</dt><dd>Pick what is underneath</dd><dt><kbd>Del</kbd></dt><dd>Delete the selection</dd><dt><kbd>←</kbd><kbd>↑</kbd><kbd>→</kbd><kbd>↓</kbd></dt><dd>Nudge (Shift = 10 px)</dd></dl></section>
+        <dl><dt><kbd>V</kbd></dt><dd>Select objects</dd><dt><kbd>T</kbd></dt><dd>Edit text (click a line)</dd><dt><kbd>Enter</kbd></dt><dd>Edit the selected line</dd><dt><kbd>X</kbd></dt><dd>Erase text (drag a box)</dd><dt><kbd>P</kbd></dt><dd>Add an image</dd><dt><kbd>Shift</kbd> + click</dt><dd>Add to the selection</dd><dt><kbd>Alt</kbd> + click</dt><dd>Pick what is underneath</dd><dt><kbd>Del</kbd></dt><dd>Delete the selection</dd><dt><kbd>←</kbd><kbd>↑</kbd><kbd>→</kbd><kbd>↓</kbd></dt><dd>Nudge (Shift = 10 px)</dd></dl></section>
+      <section><h3>Measure (Comment mode)</h3>
+        <dl><dt><kbd>Shift</kbd> + draw</dt><dd>Lock to 0°, 45°, 90°</dd><dt><kbd>Enter</kbd> / double-click</dt><dd>Finish perimeter or area</dd><dt><kbd>Backspace</kbd></dt><dd>Remove the last point</dd><dt><kbd>Esc</kbd></dt><dd>Cancel the measurement</dd><dt><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>C</kbd></dt><dd>Calibrate the scale</dd></dl></section>
     </div>
   </div>
 </div>
@@ -900,6 +957,34 @@ body[data-mode="edit"] .an:not(.an-ffr){pointer-events:none}
 </div>
 
 <div class="pop" id="pop" role="dialog" aria-label="Comment" hidden></div>
+<div class="ed-txted" id="edTxtEd" role="dialog" aria-label="Edit text" hidden>
+  <input type="text" id="edTxtIn" spellcheck="false" autocomplete="off" aria-label="Text of this line">
+  <div class="ed-txtrow">
+    <select id="edTxtFam" aria-label="Font" title="Font"><option value="Helvetica">Sans</option><option value="Times">Serif</option><option value="Courier">Mono</option></select>
+    <button class="tgl" id="edTxtB" type="button" aria-pressed="false" title="Bold"><b>B</b></button>
+    <button class="tgl" id="edTxtI" type="button" aria-pressed="false" title="Italic"><i>I</i></button>
+    <input type="number" id="edTxtSize" min="3" max="200" step="0.5" aria-label="Size" title="Size (points)">
+    <input type="color" id="edTxtCol" aria-label="Colour" title="Colour">
+  </div>
+  <div class="ed-txtnote" id="edTxtNote"></div>
+  <div class="ed-txtact"><button class="ghost sm" id="edTxtCancel" type="button">Cancel</button><button class="primary" id="edTxtOk" type="button">Apply</button></div>
+</div>
+<div class="ms-panel" id="msScale" role="group" aria-label="Measurement scale" hidden>
+  <span class="ms-cap">Scale</span>
+  <input type="number" id="msPv" min="0" step="any" aria-label="Length on the page" title="Length on the page">
+  <select id="msPu" aria-label="Unit on the page" title="Unit on the page"></select>
+  <span class="ms-eq">=</span>
+  <input type="number" id="msRv" min="0" step="any" aria-label="Real length" title="Real length">
+  <select id="msRu" aria-label="Real unit" title="Real unit (the unit the measurements are shown in)"></select>
+  <button class="ms-cal" id="msCal" type="button" title="Pick two points with a known length to set the scale (Ctrl+Shift+C)"><svg><use href="#i-scale"/></svg>Calibrate</button>
+</div>
+<div class="ed-txted cal-dlg" id="calDlg" role="dialog" aria-label="Set the scale" hidden>
+  <div class="cal-title">Set the scale</div>
+  <div class="cal-sub">The line you drew is <b id="calLen"></b> long on the page. How long is it in real life?</div>
+  <div class="ed-txtrow"><input type="number" id="calReal" min="0" step="any" aria-label="Real length" placeholder="Real length"><select id="calUnit" aria-label="Unit"></select></div>
+  <div class="ed-txtnote" id="calNote"></div>
+  <div class="ed-txtact"><button class="ghost sm" id="calCancel" type="button">Cancel</button><button class="primary" id="calOk" type="button">Set scale</button></div>
+</div>
 <div class="objbar" id="objbar" role="toolbar" aria-label="Edit the selected item" hidden></div>
 <div class="menu" id="menu" role="menu" hidden></div>
 <textarea class="textedit" id="textEdit" aria-label="Text box" spellcheck="false" hidden></textarea>
@@ -2151,6 +2236,7 @@ function refreshState() {
   A.dirty = snap() !== A.savedSnap;
   $('docName').classList.toggle('dirty', A.dirty);
   $('ribbonSaveBtn').classList.toggle('dirty', A.dirty);
+  $('saveBtn').classList.toggle('dirty', A.dirty);
   $('undoBtn').disabled = !A.undo.length;
   $('redoBtn').disabled = !A.redo.length;
 }
@@ -2452,7 +2538,9 @@ function setTool(t, force) {
   if (A.tool !== 'select') { hideSelbar(); selectObj(null); clearForeignSel(); closeMenu(); }
   if (A.tool !== 'erase' && A.preview.size) setPreview(new Set());
   if (A.editing) endTextEdit();
-  syncSwatches(); refreshObjbar(); syncLockUI();
+  if (A.mdraft && A.mdraft.tool !== A.tool) measCancel();
+  if (!MEAS_TOOLS.has(A.tool) && !selMeasure()) A.showScale = false;
+  syncSwatches(); refreshObjbar(); syncLockUI(); syncScaleUI();
   if (A.mode === 'edit') edSyncUI();
 }
 function updateHint() {
@@ -2495,6 +2583,7 @@ document.querySelectorAll('.rb-tool').forEach((b) => {
     const t = b.dataset.tool;
     if (['highlight', 'underline', 'strike'].includes(t) && readSelection()) { markSelection(t); return; }
     if (t === 'addimg') { edAddImage(); return; }
+    if (t === 'mscale') { openScaleMenu(b); return; }
     if (t === 'stamp' || t === 'sign') { if (canEdit()) (t === 'stamp' ? openStampMenu : openSignMenu)(b); return; }
     if (t !== 'select' && t !== 'pan' && !canEdit()) return;
     setTool(t, t === 'osel');
@@ -2775,7 +2864,7 @@ function updateBadge() {
   b.hidden = !n; b.textContent = n > 99 ? '99+' : n;
 }
 const sortKey = (a) => a.rects[0] || [0, 0, 0, 0];
-const DRAWINGS = ['rect', 'ellipse', 'cloud', 'arrow', 'line', 'ink'];
+const DRAWINGS = ['rect', 'ellipse', 'cloud', 'arrow', 'line', 'ink', 'dist', 'peri', 'area'];
 const listed = (a) => a.type !== 'stamp' && a.type !== 'signature' && (!DRAWINGS.includes(a.type) || hasComment(a));
 const passFilter = (a) => listed(a) && (A.filter === 'all' || (A.filter === 'withcomment' ? hasComment(a) || a.type === 'text' : A.filter === 'textbox' ? a.type === 'text' : A.filter === 'drawing' ? DRAWINGS.includes(a.type) : a.type === A.filter));
 
@@ -3053,7 +3142,7 @@ async function confirmEncrypted(docId) {
 function annotDocOpened(prep) {
   A.items = prep.items; A.savedSnap = snap(); A.undo = []; A.redo = []; A.hkey = ''; A.foreign = [];
   A.encrypted = A.encrypted || prep.encrypted; A.openId = null; A.pendingNew = null;
-  setTool('select'); updateRibbon(); refreshState(); renderComments(); updateBadge();
+  setTool('select'); measAdoptScale(); updateRibbon(); refreshState(); renderComments(); updateBadge();
   if (prep.checkEncrypted) confirmEncrypted(S.docId);
 }
 
@@ -3061,7 +3150,7 @@ function annotDocClosed() {
   clearTimeout(softTimer); clearTimeout(cmTimer);
   A.items = []; A.undo = []; A.redo = []; A.hkey = ''; A.foreign = []; A.encrypted = false; A.openId = null; A.pendingNew = null;
   existingDocClosed(); A.savedSnap = snap(); A.dirty = false; A.hoverId = null;
-  A.sel = null; A.editing = null; A.op = null; A.draft = null; A.stampSpec = null; A.sigPending = null;
+  A.sel = null; A.editing = null; A.op = null; A.draft = null; A.stampSpec = null; A.sigPending = null; A.mdraft = null; A.scale = { ...DEF_SCALE }; A.showScale = false; $('calDlg').hidden = true;
   $('textEdit').hidden = true; hideObjbar(); closeMenu();
   const pop = $('pop'); pop.hidden = true; pop.replaceChildren(); hideSelbar();
   refreshState(); renderComments(); updateBadge();
@@ -3178,7 +3267,9 @@ const annotApi = { removeMarkups, itemsInBox, visForeign, flushRemovals, hitFore
    - Everything keeps its settings inside the PDF, so it stays editable when the file is reopened.
    ===================================================================== */
 
-const OBJ_TYPES = new Set(['text', 'rect', 'ellipse', 'cloud', 'arrow', 'line', 'ink', 'stamp', 'signature']);
+const OBJ_TYPES = new Set(['text', 'rect', 'ellipse', 'cloud', 'arrow', 'line', 'ink', 'stamp', 'signature', 'dist', 'peri', 'area']);
+const MEAS = new Set(['dist', 'peri', 'area']);                      // measurements
+const MEAS_TOOLS = new Set(['dist', 'peri', 'area', 'calib']);
 const isObj = (a) => OBJ_TYPES.has(a.type);
 const isMarkup = (a) => a.type === 'highlight' || a.type === 'underline' || a.type === 'strike';
 const isVector = (a) => a.type !== 'text' && a.type !== 'stamp' && a.type !== 'signature';
@@ -3409,7 +3500,7 @@ function arrowHead(p0, p1, w) {
 function refreshBBox(a) {
   let pts;
   if (a.type === 'arrow') pts = [...a.pts, ...arrowHead(a.pts[0], a.pts[1], a.width || 2)];
-  else if (a.type === 'line') pts = a.pts;
+  else if (a.type === 'line' || MEAS.has(a.type)) pts = a.pts;
   else if (a.type === 'ink') pts = a.strokes.flat();
   else return;
   let x1 = 1e9, y1 = 1e9, x2 = -1e9, y2 = -1e9;
@@ -3434,6 +3525,8 @@ function drawObject(a, vp, px, py, parts) {
     svgLayer(parts, vp).append(svgEl('rect', { x: b.x, y: b.y, width: b.w, height: b.h, fill: 'rgba(124,58,237,.06)', stroke: '#7c3aed', 'stroke-width': 1.2, 'stroke-dasharray': '4 3' }));
     return;
   }
+
+  if (MEAS.has(a.type)) { drawMeasure(a, vp, px, py, parts); return; }
 
   if (FRAMED.has(a.type)) {
     const fr = frameOf(a), { O, u, v, W, H } = fr;
@@ -3495,7 +3588,7 @@ function handlesFor(a, vp) {
     for (const [name, i, j] of names) out.push({ name, x: xs[i], y: ys[j], cursor: CURSORS[name] });
     return out;
   }
-  if (LINEAR.has(a.type)) return a.pts.map((q, i) => { const v = vp.convertToViewportPoint(q[0], q[1]); return { name: `p${i}`, x: v[0], y: v[1], round: true, cursor: 'crosshair' }; });
+  if (LINEAR.has(a.type) || MEAS.has(a.type)) return a.pts.map((q, i) => { const v = vp.convertToViewportPoint(q[0], q[1]); return { name: `p${i}`, x: v[0], y: v[1], round: true, cursor: 'crosshair' }; });
   if (a.type === 'text' || a.type === 'stamp' || a.type === 'signature') {
     const { O, u, v, W, H } = frameOf(a);
     if (a.type === 'text') { const q = vp.convertToViewportPoint(O[0] + W * u[0] + (H / 2) * v[0], O[1] + W * u[1] + (H / 2) * v[1]); return [{ name: 'e', x: q[0], y: q[1], cursor: 'ew-resize' }]; }
@@ -3542,6 +3635,7 @@ function objHit(a, x, y, tol) {
       const [h1, h2] = arrowHead(p0, p1, a.width || 2);
       return Math.min(distPointSeg(P, p0, p1), distPointSeg(P, h1, p1), distPointSeg(P, h2, p1)) <= w;
     }
+    case 'dist': case 'peri': case 'area': return measHit(a, x, y, tol);
     case 'ink': {
       if (!(x >= r[0] - w && x <= r[2] + w && y >= r[1] - w && y <= r[3] + w)) return false;
       for (const st of a.strokes) for (let i = 0; i < st.length; i++) if (distPointSeg([x, y], st[i], st[Math.min(i + 1, st.length - 1)]) <= w) return true;
@@ -3571,7 +3665,7 @@ function selectObj(id) {
   A.sel = id;
   const now = id && findAnn(id);
   for (const a of [prev, now]) if (a) { const p = S.pages[a.page - 1]; if (p) drawAnnots(p); }
-  syncSwatches(); refreshObjbar();
+  syncSwatches(); refreshObjbar(); syncScaleUI();
 }
 
 /* ---------------------------------------------------------------------
@@ -3603,6 +3697,7 @@ function objPointerDown(e) {
   if (handle) { startResize(e, handle); return true; }
   const pageEl = t.closest?.('.page'); if (!pageEl) return false;
   if (A.tool === 'erase') return beginErase(e, pageEl);
+  if (MEAS_TOOLS.has(A.tool)) return measPointerDown(e, pageEl);
   if (OBJ_TOOLS.has(A.tool)) { if (!canEdit()) return true; return beginDraw(e, pageEl); }
   if (A.tool === 'select') {
     const a = hitObject(e.clientX, e.clientY, t);
@@ -3630,6 +3725,7 @@ function startResize(e, handle) {
 function opMove(e) {
   const op = A.op; if (!op) return;
   if (op.kind === 'erase') { eraseMove(op, e); return; }
+  if (op.kind === 'meas') { measMove(op, e); return; }
   if (op.kind.startsWith('ed')) { edOpMove(op, e); return; }
   const a = op.kind === 'draw' ? A.draft : findAnn(op.id); if (!a) return;
   if (!op.moved && Math.hypot(e.clientX - op.cx, e.clientY - op.cy) < 3) return;
@@ -3641,7 +3737,7 @@ function opMove(e) {
     if (e.shiftKey) { if (Math.abs(dx) > Math.abs(dy)) dy = 0; else dx = 0; }      // Shift keeps the move on one axis
     applyMove(a, op.orig, dx, dy);
   }
-  else if (op.kind === 'resize') applyResize(a, op, cur, e);
+  else if (op.kind === 'resize') { op.shift = e.shiftKey; applyResize(a, op, cur, e); }
   else if (op.kind === 'draw') {
     if (a.type === 'ink') { const st = a.strokes[0], last = st[st.length - 1]; if (Math.hypot(cur[0] - last[0], cur[1] - last[1]) * S.zoom * CSS_UNITS > 1.5) { st.push(cur.map(r2)); refreshBBox(a); } }
     else if (LINEAR.has(a.type)) { a.pts[1] = (e.shiftKey ? snapAngle(a.pts[0], cur) : cur).map(r2); refreshBBox(a); }
@@ -3656,7 +3752,11 @@ function opMove(e) {
 
 function applyResize(a, op, cur) {
   const o = op.orig, vp = vp1(op.p);
-  if (LINEAR.has(a.type)) { const i = +op.h.slice(1); a.pts = clone(o.pts); a.pts[i] = cur.map(r2); refreshBBox(a); return; }
+  if (LINEAR.has(a.type) || MEAS.has(a.type)) {
+    const i = +op.h.slice(1); a.pts = clone(o.pts);
+    let q = cur; if (op.shift && MEAS.has(a.type) && a.pts.length > 1) q = measSnap(a.pts[i > 0 ? i - 1 : 1], cur);
+    a.pts[i] = q.map(r2); refreshBBox(a); return;
+  }
   if (BOXY.has(a.type)) {
     const pr = op.p.div.getBoundingClientRect();
     const px = ((A.lastPtr.x - pr.left) / pr.width) * vp.width, py = ((A.lastPtr.y - pr.top) / pr.height) * vp.height;
@@ -3677,6 +3777,7 @@ function opUp(e) {
   const op = A.op; if (!op) return;
   endOp();
   if (op.kind === 'erase') { finishErase(op); return; }
+  if (op.kind === 'meas') { measUp(op, e); return; }
   if (op.kind.startsWith('ed')) { edOpUp(op, e); return; }
   if (op.kind === 'draw') { finishDraw(op); return; }
   const a = findAnn(op.id);
@@ -3886,6 +3987,7 @@ function refreshObjbar() {
   if (a.type !== 'signature') {
     const sw = el('div', 'sb-swatches'); buildSwatches(sw, (k) => recolor(a, k), a.color); bar.append(sw);
   }
+  if (MEAS.has(a.type)) bar.append(sep(), btn('ob-fs', measInfo(a).text, 'The measured value', () => {}));
   if (isVector(a)) {
     bar.append(sep());
     WIDTHS.forEach((w, i) => bar.append(on(btn('ob-w', `<i style="height:${[1.5, 3, 5][i]}px"></i>`, ['Thin line', 'Medium line', 'Thick line'][i], () => setObjWidth(a, i)), a.width === w)));
@@ -3921,13 +4023,13 @@ function repositionObjbar() {
 /* ---------------------------------------------------------------------
    Colours and line thickness in the ribbon
    --------------------------------------------------------------------- */
-function objContext() { return OBJ_TOOLS.has(A.tool) || !!(A.sel && findAnn(A.sel) && isObj(findAnn(A.sel))); }
+function objContext() { return OBJ_TOOLS.has(A.tool) || MEAS.has(A.tool) || !!(A.sel && findAnn(A.sel) && isObj(findAnn(A.sel))); }
 function syncSwatches() {
   const key = objContext() ? defColorKey() : A.color;
   document.querySelectorAll('#rbSwatches .sw, #sbSwatches .sw').forEach((b) => b.setAttribute('aria-checked', b.dataset.color === key));
   const sel = A.sel && findAnn(A.sel), idx = sel && isVector(sel) ? WIDTHS.indexOf(sel.width) : A.widthIdx;
   document.querySelectorAll('#rbWidths .rb-w').forEach((b) => b.setAttribute('aria-pressed', +b.dataset.w === idx));
-  $('rbWidths').hidden = !(OBJ_TOOLS.has(A.tool) && A.tool !== 'text') && !(sel && isVector(sel));          // thickness only matters for lines and shapes
+  $('rbWidths').hidden = !((OBJ_TOOLS.has(A.tool) && A.tool !== 'text') || MEAS.has(A.tool)) && !(sel && isVector(sel));          // thickness only matters for lines and shapes
 }
 function defColorKey() { const s = A.sel && findAnn(A.sel); return s && isObj(s) && s.type !== 'signature' ? s.color : defColor(A.tool); }
 
@@ -4173,6 +4275,8 @@ async function writeObjectAnnot(a, H) {
     const [p0, p1] = a.pts, [h1, h2] = arrowHead(p0, p1, w), f = (q) => `${r2(q[0])} ${r2(q[1])}`;
     ap = form(rect, [`${rgb} RG ${w} w 1 J 1 j`, `${f(p0)} m ${f(p1)} l S`, ...(arrow ? [`${f(h1)} m ${f(p1)} l ${f(h2)} l S`] : [])].join('\n'));
     extra = { L: [...p0, ...p1].map(r2), LE: ['None', arrow ? 'OpenArrow' : 'None'], BS: { W: w, S: 'S' } };
+  } else if (MEAS.has(a.type)) {
+    ({ subtype, rect, ap, extra, hx } = await measWriteParts(a, H));
   } else if (a.type === 'ink') {
     subtype = 'Ink'; rect = [r[0] - w / 2, r[1] - w / 2, r[2] + w / 2, r[3] + w / 2]; hx.width = w; hx.strokes = a.strokes;
     ap = form(rect, [`${rgb} RG ${w} w 1 J 1 j`, ...a.strokes.flatMap((st) => [...pdfPathOps(smoothCmds(st)), 'S'])].join('\n'));
@@ -4221,6 +4325,7 @@ function readObjectAnnot(d, N, text, PL, base) {
   const item = { ...base, type, rects: [hx.rect], color: COLORS[hxc] ? hxc : (hx.color && COLORS[hx.color] ? hx.color : 'black'), quote: '', replies: [] };
   if (hx.width) item.width = hx.width;
   if (hx.pts) item.pts = hx.pts; if (hx.strokes) item.strokes = hx.strokes;
+  if (MEAS.has(type)) { if (!Array.isArray(hx.pts) || hx.pts.length < 2) return null; if (scaleOk(hx.scale)) item.scale = hx.scale; }
   if (type === 'text') {
     item.size = hx.size || 12; item.rot = hx.rot || 0;
     for (const k of ['bold', 'italic', 'align', 'font', 'border']) if (hx[k]) item[k] = hx[k];
@@ -5069,7 +5174,80 @@ const HXEdit = (() => {
     if (/times|serif|georgia|garamond|palatino|book|roman/.test(n) && !/sans/.test(n)) return bold ? (it ? 'Times-BoldItalic' : 'Times-Bold') : (it ? 'Times-Italic' : 'Times-Roman');
     return bold ? (it ? 'Helvetica-BoldOblique' : 'Helvetica-Bold') : (it ? 'Helvetica-Oblique' : 'Helvetica');
   }
-  const DEFAULT_FONT = { two: false, vert: false, asc: 750, desc: -250, w: () => 500 };
+
+  /* ---------- reading the words: character code -> Unicode ---------- */
+  const CP1252 = { 0x80: '€', 0x82: '‚', 0x83: 'ƒ', 0x84: '„', 0x85: '…', 0x86: '†', 0x87: '‡', 0x88: 'ˆ', 0x89: '‰', 0x8a: 'Š', 0x8b: '‹', 0x8c: 'Œ', 0x8e: 'Ž', 0x91: '‘', 0x92: '’', 0x93: '“', 0x94: '”', 0x95: '•', 0x96: '–', 0x97: '—', 0x98: '˜', 0x99: '™', 0x9a: 'š', 0x9b: '›', 0x9c: 'œ', 0x9e: 'ž', 0x9f: 'Ÿ' };
+  const MAC_HIGH = 'ÄÅÇÉÑÖÜáàâäãåçéèêëíìîïñóòôöõúùûü†°¢£§•¶ß®©™´¨≠ÆØ∞±≤≥¥µ∂∑∏π∫ªºΩæø¿¡¬√ƒ≈∆«»… ÀÃÕŒœ–—“”‘’÷◊ÿŸ⁄€‹›ﬁﬂ‡·‚„‰ÂÊÁËÈÍÎÏÌÓÔÒÚÛÙıˆ˜¯˘˙˚¸˝˛ˇ';
+  const GLYPH = { space: ' ', exclam: '!', quotedbl: '"', numbersign: '#', dollar: '$', percent: '%', ampersand: '&', quotesingle: "'", parenleft: '(', parenright: ')', asterisk: '*', plus: '+', comma: ',', hyphen: '-', minus: '−', period: '.', slash: '/', zero: '0', one: '1', two: '2', three: '3', four: '4', five: '5', six: '6', seven: '7', eight: '8', nine: '9', colon: ':', semicolon: ';', less: '<', equal: '=', greater: '>', question: '?', at: '@', bracketleft: '[', backslash: '\\', bracketright: ']', asciicircum: '^', underscore: '_', grave: '`', braceleft: '{', bar: '|', braceright: '}', asciitilde: '~', bullet: '•', endash: '–', emdash: '—', quoteleft: '‘', quoteright: '’', quotedblleft: '“', quotedblright: '”', quotesinglbase: '‚', quotedblbase: '„', ellipsis: '…', degree: '°', plusminus: '±', multiply: '×', divide: '÷', mu: 'µ', copyright: '©', registered: '®', trademark: '™', Euro: '€', fi: 'fi', fl: 'fl', section: '§', paragraph: '¶', dagger: '†', daggerdbl: '‡', cent: '¢', sterling: '£', yen: '¥', currency: '¤', brokenbar: '¦', guillemotleft: '«', guillemotright: '»', exclamdown: '¡', questiondown: '¿', onesuperior: '¹', twosuperior: '²', threesuperior: '³', onequarter: '¼', onehalf: '½', threequarters: '¾', ordfeminine: 'ª', ordmasculine: 'º', germandbls: 'ß', AE: 'Æ', ae: 'æ', Oslash: 'Ø', oslash: 'ø', Eth: 'Ð', eth: 'ð', Thorn: 'Þ', thorn: 'þ', OE: 'Œ', oe: 'œ', nbspace: ' ', sfthyphen: '-', dotlessi: 'ı', perthousand: '‰', macron: '¯', acute: '´', dieresis: '¨', cedilla: '¸', circumflex: 'ˆ', tilde: '˜' };
+  const ACCENT = { grave: '̀', acute: '́', circumflex: '̂', tilde: '̃', dieresis: '̈', ring: '̊', cedilla: '̧', caron: '̌' };
+  function glyphChar(n) {
+    if (!n) return null;
+    if (Object.prototype.hasOwnProperty.call(GLYPH, n)) return GLYPH[n];
+    if (/^[A-Za-z]$/.test(n)) return n;
+    let m = /^uni([0-9A-Fa-f]{4})/.exec(n) || /^u([0-9A-Fa-f]{4,6})$/.exec(n);
+    if (m) { try { return String.fromCodePoint(parseInt(m[1], 16)); } catch (_) { return null; } }
+    m = /^([A-Za-z])(grave|acute|circumflex|tilde|dieresis|ring|cedilla|caron)$/.exec(n);
+    if (m) return (m[1] + ACCENT[m[2]]).normalize('NFC');
+    return null;
+  }
+  function parseCMap(bytes) {
+    let txt = ''; const lim = Math.min(bytes.length, 1500000);
+    for (let i = 0; i < lim; i += 8192) txt += String.fromCharCode.apply(null, bytes.subarray(i, Math.min(lim, i + 8192)));
+    const map = new Map();
+    const u16 = (h) => { if (h.length <= 2) return String.fromCharCode(parseInt(h || '0', 16)); let s = ''; for (let i = 0; i + 3 < h.length; i += 4) s += String.fromCharCode(parseInt(h.substr(i, 4), 16)); return s; };
+    const blocks = /begin(bfchar|bfrange)([\s\S]*?)end\1/g; let m;
+    while ((m = blocks.exec(txt))) {
+      if (m[1] === 'bfchar') {
+        const re = /<([0-9A-Fa-f]+)>\s*<([0-9A-Fa-f]*)>/g; let k;
+        while ((k = re.exec(m[2]))) map.set(parseInt(k[1], 16), u16(k[2]));
+      } else {
+        const re = /<([0-9A-Fa-f]+)>\s*<([0-9A-Fa-f]+)>\s*(<[0-9A-Fa-f]*>|\[[^\]]*\])/g; let k;
+        while ((k = re.exec(m[2]))) {
+          const lo = parseInt(k[1], 16), hi = Math.min(parseInt(k[2], 16), lo + 65535);
+          if (k[3][0] === '[') { const items = k[3].match(/<[0-9A-Fa-f]*>/g) || []; items.forEach((t, i) => { if (lo + i <= hi) map.set(lo + i, u16(t.slice(1, -1))); }); }
+          else { const base = u16(k[3].slice(1, -1)), last = base.charCodeAt(base.length - 1); for (let c = lo; c <= hi; c++) map.set(c, base.slice(0, -1) + String.fromCharCode(last + (c - lo))); }
+        }
+      }
+    }
+    return map;
+  }
+  function simpleDecoder(PL, fdict) {
+    const { PDFName, PDFArray, PDFNumber, PDFDict } = PL, N = (s) => PDFName.of(s);
+    const enc = fdict.lookup(N('Encoding'));
+    let base = 'WinAnsiEncoding', diffs = null;
+    if (enc instanceof PDFName) base = enc.decodeText();
+    else if (enc instanceof PDFDict) {
+      const b = enc.lookup(N('BaseEncoding')); if (b instanceof PDFName) base = b.decodeText();
+      const d = enc.lookup(N('Differences'));
+      if (d instanceof PDFArray) {
+        diffs = new Map(); let code = 0;
+        for (let i = 0; i < d.size(); i++) { const v = d.lookup(i); if (v instanceof PDFNumber) code = v.asNumber(); else if (v instanceof PDFName) diffs.set(code++, glyphChar(v.decodeText())); }
+      }
+    }
+    return (c) => {
+      if (diffs && diffs.has(c)) return diffs.get(c);
+      if (c < 32 || c === 127) return null;
+      if (c < 127) return String.fromCharCode(c);
+      if (base === 'MacRomanEncoding' && c >= 128) return MAC_HIGH[c - 128] || null;
+      if (c < 160) return CP1252[c] || null;
+      return String.fromCharCode(c);
+    };
+  }
+  // the standard font that looks most like this one
+  const stdName = (fam, bold, ital) => {
+    if (fam === 'Times') return bold ? (ital ? 'Times-BoldItalic' : 'Times-Bold') : (ital ? 'Times-Italic' : 'Times-Roman');
+    if (fam === 'Courier') return bold ? (ital ? 'Courier-BoldOblique' : 'Courier-Bold') : (ital ? 'Courier-Oblique' : 'Courier');
+    return bold ? (ital ? 'Helvetica-BoldOblique' : 'Helvetica-Bold') : (ital ? 'Helvetica-Oblique' : 'Helvetica');
+  };
+  function famOf(name, flags) {
+    const n = (name || '').toLowerCase().replace(/[\s_-]/g, '');
+    if (/courier|mono|consol|menlo|lucidaconsole|typewriter/.test(n)) return 'Courier';
+    if (/arial|helvet|calibri|verdana|tahoma|segoe|sans|gothic|myriad|roboto|opensans|lato|frutiger|univers|trebuc|futura|avenir/.test(n)) return 'Helvetica';
+    if (/times|serif|georgia|garamond|palatino|book|roman|cambria|minion|century|baskerville|didot|bodoni|caslon|charter/.test(n)) return 'Times';
+    if (flags & 1) return 'Courier';
+    return (flags & 2) ? 'Times' : 'Helvetica';
+  }
+  const DEFAULT_FONT = { two: false, vert: false, asc: 750, desc: -250, w: () => 500, fam: 'Helvetica', bold: false, italic: false, dec: (c) => (c >= 32 && c < 127 ? String.fromCharCode(c) : null) };
 
   async function buildFont(PL, fdict) {
     const { PDFName, PDFArray, PDFNumber, PDFDict, PDFRef } = PL, N = (s) => PDFName.of(s);
@@ -5120,6 +5298,22 @@ const HXEdit = (() => {
       if (a > 0) info.asc = Math.min(a, 950);
       if (d < 0) info.desc = Math.max(d, -300);
     }
+    // what the words say, and what the font looks like (used when a line of text is changed)
+    try {
+      const nmc = baseFont.replace(/^[A-Z]{6}\+/, '');
+      let fl = 0, bold = /bold|black|heavy|demi/i.test(nmc), ital = /italic|oblique/i.test(nmc);
+      if (desc instanceof PDFDict) {
+        fl = numOf(desc.lookup(N('Flags')), 0);
+        if (numOf(desc.lookup(N('ItalicAngle')), 0) !== 0 || (fl & 64)) ital = true;
+        if (numOf(desc.lookup(N('FontWeight')), 400) >= 600 || (fl & 262144)) bold = true;
+      }
+      info.fam = famOf(nmc, fl); info.bold = bold; info.italic = ital; info.fname = nmc;
+      let uni = null;
+      const tu = fdict.lookup(N('ToUnicode'));
+      if (tu && tu.dict) { const m = parseCMap(decodeStream(PL, tu)); if (m.size) uni = m; }
+      const simple = info.two ? null : simpleDecoder(PL, fdict);
+      info.dec = (c) => { if (uni && uni.has(c)) return uni.get(c); return simple ? simple(c) : null; };
+    } catch (_) { info.dec = null; }
     return info;
   }
 
@@ -5215,7 +5409,7 @@ const HXEdit = (() => {
         const el = { c: codes, g0: glyphs.length }; elems.push(el);
         for (const code of codes) {
           const w = font.w(code), adv = ((w / 1000) * fs + gs.tc + (!font.two && code === 32 ? gs.tw : 0)) * th, gw = (w / 1000) * fs * th;
-          glyphs.push({ x0: x, x1: x + gw, adv });
+          glyphs.push({ x0: x, x1: x + gw, adv, tc: gs.tc * th, u: font.dec ? font.dec(code) : (!font.two && code >= 32 && code < 127 ? String.fromCharCode(code) : null) });
           if (x < xmin) xmin = x; if (x + gw > xmax) xmax = x + gw;
           x += adv;
         }
@@ -5231,7 +5425,7 @@ const HXEdit = (() => {
         const bx = q.map((p) => p[0]), by = q.map((p) => p[1]);
         run = {
           id: idOf(s), kind: 'text', ranges: [[s, e]], bbox: [Math.min(...bx), Math.min(...by), Math.max(...bx), Math.max(...by)], quad: q, F, fs, th,
-          ys, yh, xmin, xmax, elems, glyphs, two: font.two, exotic: !!font.exotic, op: kind, dq: dq || null, chainedNext: false, vert: font.vert, fill: toHex(gs.fill), pageSize: Math.abs(fs) * scaleOf(F), z: 0
+          ys, yh, xmin, xmax, elems, glyphs, two: font.two, exotic: !!font.exotic, ts: gs.ts, fam: font.fam || 'Helvetica', bold: !!font.bold, italic: !!font.italic, op: kind, dq: dq || null, chainedNext: false, vert: font.vert, fill: toHex(gs.fill), pageSize: Math.abs(fs) * scaleOf(F), z: 0
         };
         runs.push(run);
       } else if (glyphs.length || elems.length) {
@@ -5432,6 +5626,55 @@ const HXEdit = (() => {
     return seen;
   }
 
+
+  /* ---------- the words of a line of text ---------- */
+  // cutOf(run) -> Set of glyph indexes that are already erased (or null)
+  function lineText(o, cutOf) {
+    let out = '', unk = 0, tot = 0, prev = null;
+    for (const r of o.runs) {
+      const cs = cutOf ? cutOf(r) : null;
+      const F = r.F, ul = Math.hypot(F[0], F[1]) || 1, ux = F[0] / ul, uy = F[1] / ul;
+      for (let i = 0; i < r.glyphs.length; i++) {
+        if (cs && cs.has(i)) continue;
+        const g = r.glyphs[i], st = ap(F, g.x0, 0);
+        let ch = g.u; tot++;
+        if (ch == null || ch === '�') { ch = '?'; unk++; }
+        if (prev && out && !/\s$/.test(out) && ch !== ' ') {
+          const du = (st[0] - prev.end[0]) * ux + (st[1] - prev.end[1]) * uy - prev.tc;
+          if (du > 0.18 * Math.max(r.pageSize, 1)) out += ' ';
+        }
+        out += ch;
+        prev = { end: ap(F, g.x1, 0), tc: g.tc * ul };
+      }
+    }
+    return { text: out, unknown: unk, total: tot };
+  }
+  // how a line looks, so a replacement can be drawn the same way
+  function lineInfo(o, cutOf) {
+    let best = o.runs[0], bn = -1;
+    for (const r of o.runs) { const n = r.glyphs.length; if (n > bn) { bn = n; best = r; } }
+    let first = null;
+    for (const r of o.runs) { const cs = cutOf ? cutOf(r) : null; for (let i = 0; i < r.glyphs.length; i++) if (!(cs && cs.has(i))) { first = { r, i }; break; } if (first) break; }
+    if (!first) first = { r: o.runs[0], i: 0 };
+    const t = lineText(o, cutOf), r0 = first.r;
+    return { ...t, fam: best.fam, bold: best.bold, italic: best.italic, std: stdName(best.fam, best.bold, best.italic), size: r0.pageSize, fill: best.fill || '#000000', F: r0.F, origin: ap(r0.F, r0.glyphs[first.i] ? r0.glyphs[first.i].x0 : 0, r0.ts || 0), vert: !!best.vert };
+  }
+  // characters a standard font can show, by what they look like
+  const LOOKS = { '‐': '-', '‑': '-', '‒': '-', '−': '-', ' ': ' ', ' ': ' ', ' ': ' ', ' ': ' ', '​': '', '′': "'", '″': '"', '⁄': '/', '∕': '/', '×': '×', '≤': '<', '≥': '>', '→': '>', '●': '•', '­': '-' };
+  function fitToFont(font, text) {
+    let set; try { set = new Set(font.getCharacterSet()); } catch (_) { set = null; }
+    let out = '', bad = 0;
+    for (const ch of String(text).normalize('NFC').replace(/[\r\n\t]+/g, ' ')) {
+      const cp = ch.codePointAt(0);
+      if (!set || set.has(cp)) { out += ch; continue; }
+      if (LOOKS[ch] !== undefined) { out += LOOKS[ch]; continue; }
+      const d = ch.normalize('NFD')[0];
+      if (d !== ch && (!set || set.has(d.codePointAt(0)))) { out += d; continue; }
+      out += '?'; bad++;
+    }
+    return { text: out, bad };
+  }
+
   /* ---------- rewriting ---------- */
   const cmText = (X) => `${X.map(fmt).join(' ')} cm`;
   function styleOps(sty, paint) {
@@ -5474,7 +5717,9 @@ const HXEdit = (() => {
       const uid = o.uid;
       const sub = level.subs.get(o.id);
       if (o.kind === 'text') {
-        const gd = del.has(uid);
+        const tx = ed.txt && ed.txt[uid];
+        const gd = del.has(uid) || !!tx;
+        if (tx && !del.has(uid) && ed.out) ed.out.push({ o, tx });
         for (const r of o.runs) {
           const ruid = ed.prefix + r.id;
           let set = null;
@@ -5555,13 +5800,13 @@ const HXEdit = (() => {
   }
 
   /* ---------- applying a set of edits to a document ---------- */
-  const emptyEd = () => ({ del: [], cut: {}, xf: {}, sty: {}, add: [] });
-  const isEmptyEd = (ed) => !ed || (!ed.del.length && !Object.keys(ed.cut).length && !Object.keys(ed.xf).length && !Object.keys(ed.sty).length && !ed.add.length);
+  const emptyEd = () => ({ del: [], cut: {}, xf: {}, sty: {}, add: [], txt: {} });
+  const isEmptyEd = (ed) => !ed || (!ed.del.length && !Object.keys(ed.cut).length && !Object.keys(ed.xf).length && !Object.keys(ed.sty).length && !ed.add.length && !Object.keys(ed.txt || {}).length);
   const pageOfId = (id) => { const m = /^p(\d+):/.exec(id); return m ? +m[1] : 0; };
 
   async function applyEdits(PL, doc, ed, assets, hooks = {}) {
     const { PDFName, PDFDict, PDFRawStream } = PL, N = (s) => PDFName.of(s), ctx = doc.context;
-    const byPage = new Map(); const get = (n) => (byPage.get(n) || byPage.set(n, { del: new Set(), cut: {}, xf: {}, sty: {}, add: [], expand: new Set() }).get(n));
+    const byPage = new Map(); const get = (n) => (byPage.get(n) || byPage.set(n, { del: new Set(), cut: {}, xf: {}, sty: {}, txt: {}, add: [], expand: new Set() }).get(n));
     const noteExpand = (n, id) => {                                  // groups that hold edited objects must be opened
       const chain = id.replace(/^p\d+:/, '').split('>'); let pref = '';
       for (let i = 0; i < chain.length - 1; i++) { pref = pref ? `${pref}>${chain[i]}` : chain[i]; get(n).expand.add(pref); }
@@ -5570,12 +5815,14 @@ const HXEdit = (() => {
     for (const id in ed.cut) { const n = pageOfId(id); if (n) { get(n).cut[id] = ed.cut[id]; noteExpand(n, id); } }
     for (const id in ed.xf) { const n = pageOfId(id); if (n) { get(n).xf[id] = ed.xf[id]; noteExpand(n, id); } }
     for (const id in ed.sty) { const n = pageOfId(id); if (n) { get(n).sty[id] = ed.sty[id]; noteExpand(n, id); } }
+    for (const id in (ed.txt || {})) { const n = pageOfId(id); if (n) { get(n).txt[id] = ed.txt[id]; noteExpand(n, id); } }
     for (const a of ed.add) get(a.page).add.push(a);
-    let uniq = 0, changedAny = false;
+    let uniq = 0, changedAny = false, touchedText = false;
+    const fontCache = new Map();
     for (const [n, pe] of byPage) {
       const idx = n - 1; if (idx < 0 || idx >= doc.getPageCount()) continue;
       const A = await analyzePage(PL, doc, idx, pe.expand);
-      const edIn = { delSet: pe.del, cut: pe.cut, xf: pe.xf, sty: pe.sty, prefix: A.prefix };
+      const edIn = { delSet: pe.del, cut: pe.cut, xf: pe.xf, sty: pe.sty, txt: pe.txt, out: [], prefix: A.prefix };
       let touched = false;
       const pp = privateRes(PL, ctx, A.page.node.normalizedEntries().Resources);
       A.page.node.set(N('Resources'), pp.nr);
@@ -5606,8 +5853,22 @@ const HXEdit = (() => {
       let newBytes = topRes ? topRes.bytes : A.top.bytes;
       if (topRes) prune(pp.nx, A.top, topRes.reps);
       const wasChanged = newBytes !== A.top.bytes || touched;
-      // additions
+      // changed lines of text: written new, in a standard font, where the old line was
       let tail = '';
+      for (const { o, tx } of edIn.out) {
+        const text = String(tx.t || ''); if (!text.trim()) continue;
+        const cutOf = (r) => { const c = pe.cut[A.prefix + r.id]; if (!c) return null; const set = new Set(); for (const [a, b] of c) for (let i = a; i < b; i++) set.add(i); return set; };
+        const li = lineInfo(o, cutOf), std = STD_NAMES.includes(tx.f) ? tx.f : li.std;
+        let font = fontCache.get(std); if (!font) { font = doc.embedStandardFont(std); fontCache.set(std, font); }
+        if (!pp.nf) { const nf = PL.PDFDict.withContext(ctx), old = pp.nr.lookup(N('Font')); if (old instanceof PL.PDFDict) for (const [k, v] of old.entries()) nf.set(k, v); pp.nr.set(N('Font'), nf); pp.nf = nf; pp.fn = new Map(); }
+        let fname = pp.fn.get(std); if (!fname) { fname = `HxT${pp.fn.size + 1}${Date.now().toString(36)}`; pp.fn.set(std, fname); pp.nf.set(N(fname), font.ref); }
+        const fit = fitToFont(font, text);
+        const F = li.F, ul = Math.hypot(F[0], F[1]) || 1, vl = Math.hypot(F[2], F[3]) || 1;
+        const col = fromHex(tx.c || li.fill) || [0, 0, 0], size = tx.s > 0 ? tx.s : li.size;
+        tail += `q ${col.map((v) => fmt(v / 255)).join(' ')} rg BT /${fname} ${fmt(size)} Tf ${[F[0] / ul, F[1] / ul, F[2] / vl, F[3] / vl, li.origin[0], li.origin[1]].map(fmt).join(' ')} Tm ${font.encodeText(fit.text).toString()} Tj ET Q\n`;
+        touchedText = true;
+      }
+      // additions
       if (pe.add.length) {
         for (const a of pe.add) {
           const asset = assets && assets.get(a.asset); if (!asset) continue;
@@ -5701,7 +5962,7 @@ const HXEdit = (() => {
     return true;
   }
 
-  return { rangeQuads, mergeCut, glyphsInRect, hitTest, analyzePage, applyEdits, emptyEd, isEmptyEd, mul, inv, ap, pageOfId, strBytes, toHex, fromHex, scaleOf };
+  return { rangeQuads, mergeCut, glyphsInRect, hitTest, analyzePage, applyEdits, lineText, lineInfo, fitToFont, stdName, emptyEd, isEmptyEd, mul, inv, ap, pageOfId, strBytes, toHex, fromHex, scaleOf };
 })();
 
 
@@ -5712,13 +5973,15 @@ const HXEdit = (() => {
 const ED = { doc: null, docP: null, docId: -1, pages: new Map(), open: new Map(), cycle: null, hoverRaf: 0, warned: false };
 const EDTOL = 5;                                               // click tolerance in screen pixels
 const I6 = () => [1, 0, 0, 1, 0, 0];
-function edEmpty() { return { del: [], cut: {}, xf: {}, sty: {}, add: [] }; }
-function edHas(e) { return !!(e && (e.del.length || e.add.length || Object.keys(e.cut).length || Object.keys(e.xf).length || Object.keys(e.sty).length)); }
+function edEmpty() { return { del: [], cut: {}, xf: {}, sty: {}, add: [], txt: {} }; }
+function edHas(e) { return !!(e && (e.del.length || e.add.length || Object.keys(e.cut).length || Object.keys(e.xf).length || Object.keys(e.sty).length || Object.keys(e.txt || {}).length)); }
+const edTx = () => (A.ed.txt || (A.ed.txt = {}));
 function edKey() { return edHas(A.ed) ? JSON.stringify(A.ed) : ''; }
 
 Object.assign(TOOL_HINT, {
   osel: 'Click an object, or drag a box around several. Double-click a group to open it',
   etext: 'Drag a box over the words you want to erase',
+  etxt: 'Click a line of text to change its words. Enter applies, Esc cancels',
   addimg: 'Click on the page to place the picture, or drag to size it'
 });
 
@@ -5774,7 +6037,7 @@ function edObjs(n) {
     const gone = new Set(A.ed.del), hasCut = Object.keys(A.ed.cut).length > 0;
     for (const o of info.objs) {
       if (o.hidden || gone.has(o.uid) || (o.kind === 'path' && o.clip)) continue;
-      if (o.kind === 'text') { if (gone.has(o.parentUid)) continue; if (hasCut && !edTextAlive({ runs: o.runs, prefix: info.prefix })) continue; }
+      if (o.kind === 'text') { if (gone.has(o.parentUid)) continue; if (hasCut && !edTx()[o.uid] && !edTextAlive({ runs: o.runs, prefix: info.prefix })) continue; }
       out.push(o);
     }
   }
@@ -5784,8 +6047,21 @@ function edObjs(n) {
 const edPageOfUid = (uid) => { if (uid.startsWith('add:')) { const a = A.ed.add.find((x) => `add:${x.id}` === uid); return a ? a.page : 0; } return HXEdit.pageOfId(uid); };
 const edFind = (uid) => { const n = edPageOfUid(uid); return edObjs(n).find((o) => o.uid === uid) || null; };
 
+const EDFAM = { Helvetica: 'Helvetica, Arial, "Liberation Sans", sans-serif', Times: '"Times New Roman", Times, "Liberation Serif", serif', Courier: '"Courier New", Courier, "Liberation Mono", monospace' };
+const edFamOf = (std) => (/^Times/.test(std) ? 'Times' : /^Courier/.test(std) ? 'Courier' : 'Helvetica');
+function edTxtWidth(tx, size) {
+  const std = tx.f || 'Helvetica';
+  measureCtx.font = `${/Italic|Oblique/.test(std) ? 'italic ' : ''}${/Bold/.test(std) ? 'bold ' : ''}${size}px ${EDFAM[edFamOf(std)]}`;
+  return measureCtx.measureText(tx.t || '').width;
+}
 function edBox(o) {
   if (o.added) return [o.add.x0, o.add.y0, o.add.x1, o.add.y1];
+  const tx = o.kind === 'text' && A.ed.txt && A.ed.txt[o.uid];
+  if (tx) {
+    const b = o.bbox, F = o.runs[0].F, flat = Math.abs(F[1]) < 1e-6 && Math.abs(F[2]) < 1e-6 && F[0] > 0 && F[3] > 0;
+    if (flat) { const w = edTxtWidth(tx, tx.s > 0 ? tx.s : o.fs); return [b[0], b[1], Math.max(b[2], b[0] + w), b[3]]; }
+    return b;
+  }
   const xf = A.ed.xf[o.uid]; if (!xf) return o.bbox;
   const b = o.bbox, pts = [[b[0], b[1]], [b[2], b[1]], [b[2], b[3]], [b[0], b[3]]].map(([x, y]) => HXEdit.ap(xf, x, y));
   return [Math.min(...pts.map((q) => q[0])), Math.min(...pts.map((q) => q[1])), Math.max(...pts.map((q) => q[0])), Math.max(...pts.map((q) => q[1]))];
@@ -5832,6 +6108,14 @@ function drawEdit(p, vp, px, py, frag) {
       im.style.cssText = `left:${px(b.x)};top:${py(b.y)};width:${px(b.w)};height:${py(b.h)}`; frag.append(im);
     }
     if (info) {
+      for (const uid in edTx()) {
+        const o = info.byUid.get(uid), tx = A.ed.txt[uid]; if (!o) continue;
+        const F = o.runs[0].F, flat = Math.abs(F[1]) < 1e-6 && Math.abs(F[2]) < 1e-6 && F[0] > 0 && F[3] > 0 && !((p.page.rotate + S.rotation) % 360);
+        if (!flat) { box(o.bbox, 'gone'); continue; }
+        const size = tx.s > 0 ? tx.s : o.fs, b = boxOf(vp, edBox(o)), d = el('div', 'ed-newtxt', { textContent: tx.t });
+        d.style.cssText = `left:${px(b.x)};top:${py(b.y)};min-width:${px(b.w)};height:${py(b.h)};font:${/Italic|Oblique/.test(tx.f) ? 'italic ' : ''}${/Bold/.test(tx.f) ? 'bold ' : ''}calc(var(--total-scale-factor) * ${size}px) ${EDFAM[edFamOf(tx.f || '')]};color:${tx.c || '#000'}`;
+        frag.append(d);
+      }
       for (const uid of A.ed.del) { const o = info.byUid.get(uid); if (o && o.bbox) box(o.bbox, 'gone'); }
       for (const uid in A.ed.cut) {
         const r = info.runs.get(uid); if (!r) continue;
@@ -5891,12 +6175,19 @@ function edSetSel(next, extra) {
 function edPointerDown(e) {
   const t = e.target, hd = t.closest?.('.ed-h');
   if (hd) return edBeginResize(e, hd);
-  if (!['osel', 'etext', 'addimg'].includes(A.tool)) return false;
+  if (!['osel', 'etext', 'addimg', 'etxt'].includes(A.tool)) return false;
   const pageEl = t.closest?.('.page'); if (!pageEl) return false;
   const p = S.pages[+pageEl.dataset.page - 1]; if (!p?.page) return false;
   e.preventDefault(); closePop(true); try { window.getSelection()?.removeAllRanges(); } catch { /* ignore */ }
   const start = pdfPointAt(p, e.clientX, e.clientY), base = { p, start, cx: e.clientX, cy: e.clientY, moved: false };
   if (A.tool === 'etext') { edPage(p.num); beginOp({ ...base, kind: 'edtext', rb: null, hit: null }); return true; }
+  if (A.tool === 'etxt') {
+    const c = ED.pages.get(p.num);
+    if (!c?.A) { edPage(p.num); toast(c?.err ? 'This page’s content could not be read.' : 'Reading this page… try again in a moment.'); return true; }
+    const hit = edHitAt(p, start[0], start[1]).all.find((o) => o.kind === 'text');
+    if (hit) edStartText(hit, p); else toast('Click on a line of text to change it. Text inside a group: use Select objects and double-click the group first.');
+    return true;
+  }
   if (A.tool === 'addimg') {
     if (!A.edPending) { edAddImage(); return true; }
     beginOp({ ...base, kind: 'edimg', rb: null }); return true;
@@ -6075,7 +6366,7 @@ function edDeleteSel() {
     const o = edFind(uid); if (!o) continue;
     n++;
     if (o.added) { A.ed.add = A.ed.add.filter((a) => `add:${a.id}` !== uid); continue; }
-    A.ed.del.push(uid); delete A.ed.xf[uid]; delete A.ed.sty[uid];
+    A.ed.del.push(uid); delete A.ed.xf[uid]; delete A.ed.sty[uid]; delete edTx()[uid];
     if (o.kind === 'text') for (const r of o.runs) delete A.ed.cut[`p${HXEdit.pageOfId(uid)}:${r.id}`];
   }
   A.edSel = new Set(); A.edHover = null;
@@ -6128,8 +6419,9 @@ function refreshEditBar() {
   const btn = (cls, html, title, fn) => { const b = el('button', cls, { type: 'button', innerHTML: html, title }); b.setAttribute('aria-label', title); b.addEventListener('mousedown', (e) => e.preventDefault()); b.addEventListener('click', fn); return b; };
   const label = el('span', 'ob-label');
   label.append(el('b', '', { textContent: objs.length === 1 ? edLabel(objs[0]) : `${objs.length} objects` }));
-  label.append(el('small', '', { textContent: objs.length === 1 && objs[0].kind === 'text' ? 'Press Delete to erase the whole line' : 'Drag to move' }));
+  label.append(el('small', '', { textContent: objs.length === 1 && objs[0].kind === 'text' ? 'Double-click to change the words' : 'Drag to move' }));
   bar.append(label);
+  if (objs.length === 1 && objs[0].kind === 'text') bar.append(el('span', 'sb-sep'), btn('', '<svg><use href="#i-texte"/></svg>Edit text', 'Change the words of this line (Enter)', () => edStartText(objs[0])));
   if (objs.length === 1 && objs[0].kind === 'form' && !objs[0].added) bar.append(el('span', 'sb-sep'), btn('', 'Open group', 'Select the things inside this group (double-click)', () => edOpenGroup(objs[0])));
   bar.append(el('span', 'sb-sep'), btn('ob-del', '<svg><use href="#i-trash"/></svg>Delete', 'Delete (Delete key)', edDeleteSel));
   bar.hidden = false; repositionObjbar();
@@ -6156,19 +6448,20 @@ viewer.addEventListener('dblclick', (e) => {
   const pageEl = e.target.closest?.('.page'); if (!pageEl) return;
   const p = S.pages[+pageEl.dataset.page - 1]; if (!p?.page) return;
   const pt = pdfPointAt(p, e.clientX, e.clientY), { all } = edHitAt(p, pt[0], pt[1]);
+  const t = all.find((o) => o.kind === 'text'); if (t && (!all.find((o) => o.kind === 'form') || all.indexOf(t) < all.findIndex((o) => o.kind === 'form'))) { e.preventDefault(); edStartText(t, p); return; }
   const f = all.find((o) => o.kind === 'form'); if (f) { e.preventDefault(); edOpenGroup(f); }
 });
 
 /* ---------- hover ---------- */
 viewer.addEventListener('pointermove', (e) => {
-  if (A.mode !== 'edit' || A.tool !== 'osel' || e.buttons || A.op || ED.hoverRaf) return;
+  if (A.mode !== 'edit' || (A.tool !== 'osel' && A.tool !== 'etxt') || e.buttons || A.op || ED.hoverRaf) return;
   const { clientX, clientY, target } = e;
   ED.hoverRaf = requestAnimationFrame(() => {
     ED.hoverRaf = 0;
     const pageEl = target.closest?.('.page'); let uid = null;
     const p = pageEl ? S.pages[+pageEl.dataset.page - 1] : null;
-    if (p?.page && !target.closest('.ed-h')) { const pt = pdfPointAt(p, clientX, clientY); const h = edHitAt(p, pt[0], pt[1]).top; uid = h ? h.uid : null; }
-    viewer.dataset.hover = uid ? 'move' : '';
+    if (p?.page && !target.closest('.ed-h')) { const pt = pdfPointAt(p, clientX, clientY); const hh = edHitAt(p, pt[0], pt[1]); const h = A.tool === 'etxt' ? hh.all.find((o) => o.kind === 'text') : hh.top; uid = h ? h.uid : null; }
+    viewer.dataset.hover = uid && A.tool === 'osel' ? 'move' : '';
     if (uid !== A.edHover) { const before = A.edHover; A.edHover = uid; edRedraw(new Set([before, uid].filter(Boolean).map(edPageOfUid).filter(Boolean))); }
   });
 }, { passive: true });
@@ -6224,6 +6517,86 @@ $('edSelAll').addEventListener('click', () => {
     }
   });
 });
+
+
+/* ---------- changing the words of a line ---------- */
+const edTE = { o: null, p: null, li: null, orig: null, open: false };
+const WIN_OK = /^[ -~ -ÿ€‚ƒ„…†‡ˆ‰Š‹ŒŽ‘’“”•–—˜™š›œžŸ]$/;
+const edCutOf = (o) => (r) => { const c = A.ed.cut[o.prefix + r.id]; if (!c) return null; const set = new Set(); for (const [a, b] of c) for (let i = a; i < b; i++) set.add(i); return set; };
+const edHexOf = (h) => (/^#[0-9a-f]{6}$/i.test(h || '') ? h.toLowerCase() : '#000000');
+
+function edStartText(o, p) {
+  if (!canEdit() || !o || o.kind !== 'text') return;
+  if (A.mode !== 'edit') setMode('edit');
+  const page = p || S.pages[edPageOfUid(o.uid) - 1]; if (!page?.page) return;
+  const info = ED.pages.get(page.num)?.A; o.prefix = o.prefix || info?.prefix || `p${page.num}:`;
+  const li = HXEdit.lineInfo(o, edCutOf(o)), tx = edTx()[o.uid];
+  if (li.vert) { toast('Vertical text can’t be changed here. You can erase it and add a text box in Comment mode.'); return; }
+  edTE.o = o; edTE.p = page; edTE.li = li; edTE.open = true;
+  edTE.orig = { t: li.text, f: li.std, s: Math.round(li.size * 100) / 100, c: edHexOf(li.fill) };
+  const unreadable = !tx && li.total > 0 && li.unknown > li.total / 2;
+  const cur = tx || edTE.orig;
+  $('edTxtIn').value = unreadable ? '' : cur.t;
+  $('edTxtFam').value = edFamOf(cur.f || li.std); $('edTxtB').setAttribute('aria-pressed', /Bold/.test(cur.f || li.std)); $('edTxtI').setAttribute('aria-pressed', /Italic|Oblique/.test(cur.f || li.std));
+  $('edTxtSize').value = Math.round((cur.s > 0 ? cur.s : li.size) * 10) / 10; $('edTxtCol').value = edHexOf(cur.c || li.fill);
+  $('edTxtNote').className = 'ed-txtnote'; $('edTxtNote').textContent = unreadable ? 'The viewer can’t read the words of this line (its font has no text map). Type the new text.' : 'The line is rewritten in a standard font (Sans, Serif or Mono) of the same size and colour.';
+  A.edSel = new Set([o.uid]); closeMenu(); hideObjbar(); edRedraw([page.num]); edSyncUI();
+  const ed = $('edTxtEd'); ed.hidden = false; edPlaceText();
+  const inp = $('edTxtIn'); inp.focus(); inp.select();
+}
+function edPlaceText() {
+  const ed = $('edTxtEd'); if (ed.hidden || !edTE.o) return;
+  const r = edAnchorRect(), vr = viewer.getBoundingClientRect();
+  const w = ed.offsetWidth, h = ed.offsetHeight;
+  if (!r) { ed.style.left = `${Math.round((innerWidth - w) / 2)}px`; ed.style.top = `${Math.round(vr.top + 20)}px`; return; }
+  let y = r.top - h - 10; if (y < vr.top + 6) y = r.bottom + 10;
+  ed.style.left = `${Math.round(clampN(r.left, 8, innerWidth - w - 8))}px`; ed.style.top = `${Math.round(clampN(y, 8, innerHeight - h - 8))}px`;
+}
+function edTextValues() {
+  const fam = $('edTxtFam').value, b = $('edTxtB').getAttribute('aria-pressed') === 'true', i = $('edTxtI').getAttribute('aria-pressed') === 'true';
+  const size = parseFloat($('edTxtSize').value);
+  return { t: $('edTxtIn').value.replace(/[\r\n\t]+/g, ' '), f: HXEdit.stdName(fam, b, i), s: isFinite(size) && size >= 1 ? Math.min(size, 400) : edTE.orig.s, c: edHexOf($('edTxtCol').value) };
+}
+function edTextNote() {
+  const note = $('edTxtNote'), v = edTextValues(); let bad = '';
+  for (const ch of v.t.normalize('NFC')) if (!WIN_OK.test(ch) && !bad.includes(ch) && !/[‐-‒−­   ​]/.test(ch) && ch.normalize('NFD')[0] === ch) bad += ch;
+  note.className = bad ? 'ed-txtnote warn' : 'ed-txtnote';
+  if (bad) note.textContent = `${[...bad].slice(0, 6).join(' ')} can’t be drawn in this font and will show as “?”. Letters from other scripts need a text box in Comment mode.`;
+}
+function edCloseText(apply) {
+  if (!edTE.open) return;
+  const o = edTE.o, p = edTE.p, v = apply ? edTextValues() : null, orig = edTE.orig;
+  edTE.open = false; $('edTxtEd').hidden = true; edTE.o = null;
+  if (!apply || !o) { edRedraw(p ? [p.num] : []); return; }
+  const had = edTx()[o.uid];
+  const same = v.t === orig.t && v.f === orig.f && Math.abs(v.s - orig.s) < 0.05 && v.c === orig.c;
+  const prev = had || null;
+  if (same) { if (!had) return; pushHistory(); delete A.ed.txt[o.uid]; edChanged([p.num]); toast('The line is back to its original text.'); return; }
+  if (prev && prev.t === v.t && prev.f === v.f && Math.abs((prev.s || 0) - v.s) < 0.05 && prev.c === v.c) return;
+  if (!v.t.trim()) {
+    pushHistory(); delete A.ed.txt[o.uid]; A.ed.del.push(o.uid); A.edSel = new Set();
+    edChanged([p.num]); toast('That line is now empty, so it was deleted. Press Ctrl+Z to bring it back.', 'success'); return;
+  }
+  pushHistory(); A.ed.txt[o.uid] = v; edChanged([p.num]);
+  let bad = 0; for (const ch of v.t.normalize('NFC')) if (!WIN_OK.test(ch) && !/[‐-‒−­   ​]/.test(ch) && ch.normalize('NFD')[0] === ch) bad++;
+  toast(bad ? `Text changed. ${bad} ${bad === 1 ? 'character' : 'characters'} can’t be drawn in this font and became “?”.` : 'Text changed. Press Ctrl+Z to undo.', bad ? '' : 'success');
+}
+$('edTxtIn').addEventListener('input', edTextNote);
+for (const id of ['edTxtFam', 'edTxtSize', 'edTxtCol']) $(id).addEventListener('input', edTextNote);
+for (const id of ['edTxtB', 'edTxtI']) $(id).addEventListener('click', (e) => { const b = e.currentTarget; b.setAttribute('aria-pressed', b.getAttribute('aria-pressed') !== 'true'); $('edTxtIn').focus(); });
+$('edTxtOk').addEventListener('click', () => edCloseText(true));
+$('edTxtCancel').addEventListener('click', () => edCloseText(false));
+$('edTxtEd').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); e.stopPropagation(); edCloseText(true); }
+  else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); edCloseText(false); }
+  else e.stopPropagation();
+});
+document.addEventListener('pointerdown', (e) => {
+  if (!edTE.open || $('edTxtEd').contains(e.target)) return;
+  edCloseText(true);                                           // clicking elsewhere keeps what was typed
+}, true);
+window.addEventListener('resize', edPlaceText);
+viewer.addEventListener('scroll', edPlaceText, { passive: true });
 
 /* ---------- adding a picture ---------- */
 const jpegSize = (b) => {
@@ -6290,6 +6663,8 @@ document.addEventListener('keydown', (e) => {
     stop(); const d = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[e.key]; edNudge(d[0], d[1], e.shiftKey); return;
   }
   if (k === 'v') { stop(); setTool('osel', true); return; }
+  if (e.key === 'Enter' && A.edSel.size === 1 && A.tool === 'osel') { const o = edFind([...A.edSel][0]); if (o && o.kind === 'text') { stop(); edStartText(o); return; } }
+  if (k === 't') { stop(); setTool('etxt', true); return; }
   if (k === 'x') { stop(); setTool('etext', true); return; }
   if (k === 'p') { stop(); edAddImage(); return; }
   if (k === 'm') { stop(); setTool('pan', true); return; }
@@ -6301,6 +6676,342 @@ async function edApplyBytes(bytes, edJson) {
   const PL = await loadPdfLib(), doc = await PL.PDFDocument.load(bytes, loadOpts(PL));
   await HXEdit.applyEdits(PL, doc, JSON.parse(edJson), A.edAssets);
   return doc.save(SAVE_OPTS);
+}
+
+
+/* =====================================================================
+   Measurement tools: Distance, Perimeter and Area, with a scale
+   (the constants MEAS and MEAS_TOOLS live in the main part of the file)
+   ===================================================================== */
+const UNIT_PT = { pt: 1, in: 72, ft: 864, yd: 2592, mi: 4561920, mm: 72 / 25.4, cm: 72 / 2.54, m: 72 / 0.0254, km: 72 / 0.0000254 };
+const UNIT_ORDER = [['mm', 'millimetres (mm)'], ['cm', 'centimetres (cm)'], ['m', 'metres (m)'], ['km', 'kilometres (km)'], ['in', 'inches (in)'], ['ft', 'feet (ft)'], ['yd', 'yards (yd)'], ['mi', 'miles (mi)'], ['pt', 'points (pt)']];
+const METRIC = new Set(['mm', 'cm', 'm', 'km']);
+const DEF_SCALE = { pv: 1, pu: 'mm', rv: 1, ru: 'mm' };
+Object.assign(A, { scale: { ...DEF_SCALE }, mdraft: null, showScale: false });
+Object.assign(TOOL_HINT, {
+  dist: 'Click and drag, or click two points. Hold Shift to lock to horizontal, vertical or 45°. Press Esc when you are done',
+  peri: 'Click each point along the path, then double-click or press Enter to finish. Shift locks the angle. Backspace removes the last point',
+  area: 'Click each corner of the shape, then double-click, press Enter or click the first point to close it. Shift locks the angle',
+  calib: 'Click two points whose real distance you know, then type that distance'
+});
+Object.assign(TYPE_LABEL, { dist: 'Distance', peri: 'Perimeter', area: 'Area' });
+Object.assign(TYPE_ICON, { dist: 'i-dist', peri: 'i-peri', area: 'i-area' });
+
+/* ---------- scale and numbers ---------- */
+const scaleOk = (s) => !!s && [s.pv, s.rv].every((v) => typeof v === 'number' && isFinite(v) && v > 0) && UNIT_PT[s.pu] > 0 && UNIT_PT[s.ru] > 0;
+const scaleK = (s) => s.rv / (s.pv * UNIT_PT[s.pu]);                       // real units per PDF point
+const numStr = (v) => String(+Number(v).toPrecision(7));
+const scaleText = (s) => `${numStr(s.pv)} ${s.pu} = ${numStr(s.rv)} ${s.ru}`;
+function fmtMeas(v) {
+  if (!isFinite(v)) return '—';
+  const abs = Math.abs(v), dec = abs >= 1 ? 2 : abs >= 0.01 ? 3 : 4;
+  return v.toLocaleString('en-US', { minimumFractionDigits: dec, maximumFractionDigits: dec });
+}
+
+/* ---------- geometry ---------- */
+const segLen = (a, b) => Math.hypot(b[0] - a[0], b[1] - a[1]);
+function pathLen(pts, closed) { let t = 0; for (let i = 1; i < pts.length; i++) t += segLen(pts[i - 1], pts[i]); if (closed && pts.length > 2) t += segLen(pts[pts.length - 1], pts[0]); return t; }
+function polyArea(pts) { let s = 0; for (let i = 0; i < pts.length; i++) { const a = pts[i], b = pts[(i + 1) % pts.length]; s += a[0] * b[1] - b[0] * a[1]; } return Math.abs(s) / 2; }
+function polyCentroid(pts) {
+  let s = 0, cx = 0, cy = 0;
+  for (let i = 0; i < pts.length; i++) { const a = pts[i], b = pts[(i + 1) % pts.length], c = a[0] * b[1] - b[0] * a[1]; s += c; cx += (a[0] + b[0]) * c; cy += (a[1] + b[1]) * c; }
+  if (Math.abs(s) < 1e-6) return [pts.reduce((t, q) => t + q[0], 0) / pts.length, pts.reduce((t, q) => t + q[1], 0) / pts.length];
+  return [cx / (3 * s), cy / (3 * s)];
+}
+function pointAlong(pts, frac) {
+  const total = pathLen(pts, false); if (!total) return pts[0].slice();
+  let want = total * frac;
+  for (let i = 1; i < pts.length; i++) { const l = segLen(pts[i - 1], pts[i]); if (want <= l) { const t = l ? want / l : 0; return [pts[i - 1][0] + t * (pts[i][0] - pts[i - 1][0]), pts[i - 1][1] + t * (pts[i][1] - pts[i - 1][1])]; } want -= l; }
+  return pts[pts.length - 1].slice();
+}
+const inPoly = (x, y, P) => { let c = false; for (let i = 0, j = P.length - 1; i < P.length; j = i++) if ((P[i][1] > y) !== (P[j][1] > y) && x < ((P[j][0] - P[i][0]) * (y - P[i][1])) / (P[j][1] - P[i][1]) + P[i][0]) c = !c; return c; };
+const bboxPts = (pts) => [Math.min(...pts.map((q) => q[0])), Math.min(...pts.map((q) => q[1])), Math.max(...pts.map((q) => q[0])), Math.max(...pts.map((q) => q[1]))].map(r2);
+// keep the line on 0, 45, 90 ... degrees from the previous point
+function measSnap(p0, p) {
+  const dx = p[0] - p0[0], dy = p[1] - p0[1]; if (!dx && !dy) return p;
+  const th = Math.round(Math.atan2(dy, dx) / (Math.PI / 4)) * (Math.PI / 4), c = Math.cos(th), s = Math.sin(th), l = dx * c + dy * s;
+  return [p0[0] + l * c, p0[1] + l * s];
+}
+
+/* ---------- the value of a measurement ---------- */
+function measInfo(a) {
+  const sc = scaleOk(a.scale) ? a.scale : A.scale, k = scaleK(sc), pts = a.pts || [];
+  if (a.calib) { const L = pts.length > 1 ? segLen(pts[0], pts[pts.length - 1]) : 0; const u = METRIC.has(A.scale.ru) ? 'mm' : 'in'; return { text: `${fmtMeas(L / UNIT_PT[u])} ${u} on the page`, at: pts.length > 1 ? [(pts[0][0] + pts[1][0]) / 2, (pts[0][1] + pts[1][1]) / 2] : (pts[0] || [0, 0]), value: L }; }
+  if (a.type === 'dist') {
+    const L = pts.length > 1 ? segLen(pts[0], pts[1]) : 0;
+    return { text: `${fmtMeas(L * k)} ${sc.ru}`, at: pts.length > 1 ? [(pts[0][0] + pts[1][0]) / 2, (pts[0][1] + pts[1][1]) / 2] : (pts[0] || [0, 0]), value: L * k };
+  }
+  if (a.type === 'peri') {
+    const L = pathLen(pts, false);
+    return { text: `Perimeter ${fmtMeas(L * k)} ${sc.ru}`, at: pts.length ? pointAlong(pts, 0.5) : [0, 0], value: L * k };
+  }
+  const A2 = pts.length > 2 ? polyArea(pts) : 0;
+  return { text: `Area ${fmtMeas(A2 * k * k)} ${sc.ru}²`, at: pts.length > 2 ? polyCentroid(pts) : (pts[0] || [0, 0]), value: A2 * k * k };
+}
+
+/* ---------- drawing on the page ---------- */
+function drawMeasure(a, vp, px, py, parts) {
+  const { frag } = parts, col = lineColor(a), active = a.id === A.openId ? ' is-active' : '', w = a.width || 2;
+  const P = (a.pts || []).map((q) => vp.convertToViewportPoint(q[0], q[1]));
+  if (!P.length) return;
+  const g = svgEl('g', { class: `an${active}`, fill: 'none', stroke: col, 'stroke-width': w, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' });
+  g.dataset.id = a.id;
+  if (a.calib) g.setAttribute('stroke-dasharray', '7 5');
+  const d = `M${P.map((q) => `${q[0].toFixed(2)} ${q[1].toFixed(2)}`).join('L')}${a.type === 'area' && P.length >= 3 ? 'Z' : ''}`;
+  const path = svgEl('path', { d });
+  if (a.type === 'area' && P.length >= 3) { path.setAttribute('fill', col); path.setAttribute('fill-opacity', '0.14'); }
+  g.append(path);
+  if (a.type === 'dist' && P.length > 1) {                                       // dimension-line ticks at both ends
+    const dx = P[1][0] - P[0][0], dy = P[1][1] - P[0][1], l = Math.hypot(dx, dy) || 1, nx = (-dy / l) * 5, ny = (dx / l) * 5;
+    g.append(svgEl('path', { d: `M${P[0][0] - nx} ${P[0][1] - ny}L${P[0][0] + nx} ${P[0][1] + ny}M${P[1][0] - nx} ${P[1][1] - ny}L${P[1][0] + nx} ${P[1][1] + ny}` }));
+  }
+  if (a.type !== 'dist') for (const q of P) g.append(svgEl('circle', { cx: q[0], cy: q[1], r: w / 2 + 1.6, fill: col, stroke: 'none' }));
+  svgLayer(parts, vp).append(g);
+  if (P.length >= (a.type === 'area' ? 3 : 2) || a.calib) {
+    const info = measInfo(a), c = vp.convertToViewportPoint(info.at[0], info.at[1]);
+    const lab = el('div', `an an-meas${active}${a.calib ? ' calib' : ''}`, { textContent: info.text });
+    lab.dataset.id = a.id; lab.style.cssText = `--l:${col};left:${px(c[0])};top:${py(c[1])}`;
+    frag.append(lab);
+  }
+  if (a.id !== 'draft' && hasComment(a)) {
+    const b = boxOf(vp, a.rects[0]), flag = el('div', 'an an-flag'); flag.dataset.id = a.id;
+    flag.style.cssText = `--l:${col};left:${px(b.x + b.w)};top:${py(b.y)}`; frag.append(flag);
+  }
+}
+
+/* ---------- clicks and drags ---------- */
+function measDraftBuild() {
+  const m = A.mdraft;
+  if (!m) { A.draft = null; return; }
+  const pts = m.cur ? [...m.pts, m.cur] : m.pts.slice(), type = m.tool === 'calib' ? 'dist' : m.tool;
+  A.draft = pts.length ? { id: 'draft', type, page: m.page, pts, calib: m.tool === 'calib', color: m.tool === 'calib' ? 'blue' : defColor(type), width: WIDTHS[A.widthIdx], rects: [bboxPts(pts)], scale: A.scale, text: '', replies: [], quote: '' } : null;
+}
+function measRedraw(page) { const p = S.pages[(page || (A.mdraft && A.mdraft.page)) - 1]; if (p?.rendered) drawAnnots(p); }
+const measPoint = (m, raw, shift) => (shift && m.pts.length ? measSnap(m.pts[m.pts.length - 1], raw) : raw).map(r2);
+function measCancel() { const pg = A.mdraft && A.mdraft.page; A.mdraft = null; A.draft = null; if (pg) measRedraw(pg); }
+
+function measPointerDown(e, pageEl) {
+  const p = S.pages[+pageEl.dataset.page - 1]; if (!p?.page) return false;
+  if (!canEdit()) return true;
+  e.preventDefault(); closePop(true); try { window.getSelection()?.removeAllRanges(); } catch { /* ignore */ }
+  const tool = A.tool, raw = pdfPointAt(p, e.clientX, e.clientY), need = tool === 'area' ? 3 : 2;
+  if (A.mdraft && A.mdraft.page !== p.num) measCancel();
+  let m = A.mdraft;
+  if (m && (tool === 'peri' || tool === 'area') && m.pts.length) {
+    const tol = 8 / (S.zoom * CSS_UNITS);
+    if (tool === 'area' && m.pts.length >= 3 && segLen(raw, m.pts[0]) <= tol) { measFinish(); return true; }
+  }
+  if (!m) m = A.mdraft = { tool, page: p.num, pts: [], cur: null };
+  const pt = measPoint(m, raw, e.shiftKey);
+  if (!m.pts.length) {
+    m.pts.push(pt); m.cur = null;
+    beginOp({ kind: 'meas', p, cx: e.clientX, cy: e.clientY, moved: false });
+    measDraftBuild(); measRedraw(); return true;
+  }
+  if (segLen(pt, m.pts[m.pts.length - 1]) * S.zoom * CSS_UNITS < 2) return true;
+  m.pts.push(pt); m.cur = null;
+  if (tool === 'dist' || tool === 'calib') { measFinish(); return true; }
+  measDraftBuild(); measRedraw(); return true;
+}
+function measMove(op, e) {
+  const m = A.mdraft; if (!m) return;
+  if (!op.moved && Math.hypot(e.clientX - op.cx, e.clientY - op.cy) < 4) return;
+  op.moved = true;
+  m.cur = measPoint(m, pdfPointAt(op.p, e.clientX, e.clientY), e.shiftKey);
+  measDraftBuild(); redrawOpPage(op);
+}
+function measUp(op) {
+  const m = A.mdraft; if (!m) return;
+  if (op.moved && m.cur && segLen(m.cur, m.pts[0]) * S.zoom * CSS_UNITS >= 6) {
+    m.pts.push(m.cur); m.cur = null;
+    if (m.tool === 'dist' || m.tool === 'calib') { measFinish(); return; }
+  } else m.cur = null;
+  measDraftBuild(); measRedraw();
+}
+viewer.addEventListener('dblclick', (e) => {                                  // double-click finishes a perimeter or an area
+  const m = A.mdraft; if (!m || (m.tool !== 'peri' && m.tool !== 'area')) return;
+  if (m.pts.length >= (m.tool === 'area' ? 3 : 2)) { e.preventDefault(); measFinish(); }
+});
+let measRaf = 0;
+function measHover(cx, cy, shift) {
+  const m = A.mdraft; if (!m || A.op || !m.pts.length) return;
+  const p = S.pages[m.page - 1]; if (!p?.page) return;
+  m.cur = measPoint(m, pdfPointAt(p, cx, cy), shift);
+  measDraftBuild();
+  if (!measRaf) measRaf = requestAnimationFrame(() => { measRaf = 0; measRedraw(); });
+}
+viewer.addEventListener('pointermove', (e) => { if (A.mdraft && !e.buttons) measHover(e.clientX, e.clientY, e.shiftKey); }, { passive: true });
+
+async function measFinish() {
+  const m = A.mdraft; if (!m) return;
+  const tool = m.tool, need = tool === 'area' ? 3 : 2, pts = m.pts.map((q) => q.slice());
+  while (pts.length > 1 && segLen(pts[pts.length - 1], pts[pts.length - 2]) < 0.01) pts.pop();         // a double-click adds the last point twice
+  const p = S.pages[m.page - 1];
+  A.mdraft = null; A.draft = null; if (p) drawAnnots(p);
+  if (pts.length < need) { toast(tool === 'area' ? 'An area needs at least three corners.' : 'A measurement needs at least two points.'); return; }
+  if (tool === 'calib') { measAskReal(pts, p); return; }
+  if (tool === 'dist' && segLen(pts[0], pts[1]) < 0.5) return;
+  if (!(await ensureAuthor())) return;
+  const a = { id: uid(), type: tool, page: m.page, pts, rects: [bboxPts(pts)], color: defColor(tool), width: WIDTHS[A.widthIdx], scale: { ...A.scale }, text: '', quote: '', replies: [], author: A.author, created: nowISO(), modified: nowISO() };
+  pushHistory(); A.items.push(a); afterChange([a.page]);
+}
+
+document.addEventListener('keydown', (e) => {
+  if (!S.pdf || !$('modal').hidden || !$('sigDlg').hidden) return;
+  const k = e.key.toLowerCase();
+  if ((e.ctrlKey || e.metaKey) && e.shiftKey && !e.altKey && k === 'c') { e.preventDefault(); e.stopImmediatePropagation(); measCalibrate(); return; }
+  const m = A.mdraft; if (!m || /^(input|textarea|select)$/i.test(e.target.tagName) || e.ctrlKey || e.metaKey || e.altKey) return;
+  if (e.key === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); measCancel(); }
+  else if (e.key === 'Enter') { e.preventDefault(); e.stopImmediatePropagation(); measFinish(); }
+  else if (e.key === 'Backspace') { e.preventDefault(); e.stopImmediatePropagation(); m.pts.pop(); m.cur = null; if (!m.pts.length) measCancel(); else { measDraftBuild(); measRedraw(); } }
+  else if (e.key === 'Shift' && !e.repeat) measHover(A.lastPtr?.x || 0, A.lastPtr?.y || 0, true);
+}, true);
+document.addEventListener('keyup', (e) => { if (e.key === 'Shift' && A.mdraft) measHover(A.lastPtr?.x || 0, A.lastPtr?.y || 0, false); });
+
+/* ---------- selecting and editing the points of one ---------- */
+function measHit(a, x, y, tol) {
+  const P = a.pts, w = (a.width || 2) / 2 + tol; if (!P || P.length < 2) return false;
+  if (a.type === 'area' && P.length > 2) {
+    for (let i = 0; i < P.length; i++) if (distPointSeg([x, y], P[i], P[(i + 1) % P.length]) <= w) return true;
+    return a.id === A.sel && inPoly(x, y, P);
+  }
+  for (let i = 1; i < P.length; i++) if (distPointSeg([x, y], P[i - 1], P[i]) <= w) return true;
+  return false;
+}
+
+/* ---------- scale: the boxes in the ribbon, the menu and calibration ---------- */
+const selMeasure = () => { const a = A.sel && findAnn(A.sel); return a && MEAS.has(a.type) ? a : null; };
+function syncScaleUI() {
+  const g = $('msScale'); if (!g) return;
+  const ms = selMeasure(), show = A.mode === 'comment' && (MEAS_TOOLS.has(A.tool) || !!ms || A.showScale);
+  g.hidden = !show; if (!show) return;
+  g.style.top = `${Math.round($('ribbon').getBoundingClientRect().bottom + 8)}px`;
+  const sc = ms && scaleOk(ms.scale) ? ms.scale : A.scale, set = (id, v) => { const n = $(id); if (document.activeElement !== n) n.value = v; };
+  set('msPv', numStr(sc.pv)); set('msPu', sc.pu); set('msRv', numStr(sc.rv)); set('msRu', sc.ru);
+  $('msScale').title = ms ? 'Scale of the selected measurement' : 'Scale for new measurements';
+}
+function measSetScale(sc, opt = {}) {
+  const sel = selMeasure(), targets = opt.items || (sel ? [sel] : []);
+  if (targets.length) {
+    pushHistory(targets.length === 1 && !opt.items ? `ms:${targets[0].id}` : '');
+    for (const t of targets) { t.scale = { ...sc }; t.modified = nowISO(); }
+    afterChange(targets.map((t) => t.page)); refreshObjbar();
+  }
+  A.scale = { ...sc }; syncScaleUI();
+}
+function fillUnits(sel) { sel.replaceChildren(...UNIT_ORDER.map(([v, l]) => el('option', '', { value: v, textContent: v === 'pt' ? 'pt' : v, title: l }))); }
+for (const id of ['msPu', 'msRu', 'calUnit']) fillUnits($(id));
+function onScaleBox() {
+  const sc = { pv: parseFloat($('msPv').value), pu: $('msPu').value, rv: parseFloat($('msRv').value), ru: $('msRu').value };
+  if (!scaleOk(sc)) { toast('Type a number bigger than zero in both boxes.', 'error'); syncScaleUI(); return; }
+  measSetScale(sc);
+}
+for (const id of ['msPv', 'msPu', 'msRv', 'msRu']) $(id).addEventListener('change', onScaleBox);
+$('msCal').addEventListener('click', () => measCalibrate());
+window.addEventListener('resize', () => syncScaleUI());
+for (const id of ['msPv', 'msRv']) $(id).addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); } e.stopPropagation(); });
+
+function measAdoptScale() {
+  const last = A.items.filter((a) => MEAS.has(a.type) && scaleOk(a.scale)).sort((x, y) => Date.parse(x.created) - Date.parse(y.created)).pop();
+  A.scale = last ? { ...last.scale } : { ...DEF_SCALE }; A.showScale = false; syncScaleUI();
+}
+
+const SCALE_PRESETS = [
+  ['Metric ratios', [1, 2, 5, 10, 20, 50, 100, 200, 500].map((n) => ({ label: `1 : ${n}`, sc: n >= 20 ? { pv: 1, pu: 'mm', rv: n / 1000, ru: 'm' } : { pv: 1, pu: 'mm', rv: n, ru: 'mm' } }))],
+  ['Architectural', [['1/8" = 1\'', 0.125], ['1/4" = 1\'', 0.25], ['1/2" = 1\'', 0.5], ['1" = 1\'', 1]].map(([label, pv]) => ({ label, sc: { pv, pu: 'in', rv: 1, ru: 'ft' } }))],
+  ['Engineering', [10, 20, 50, 100].map((n) => ({ label: `1" = ${n}'`, sc: { pv: 1, pu: 'in', rv: n, ru: 'ft' } }))]
+];
+const sameScale = (a, b) => Math.abs(scaleK(a) / scaleK(b) - 1) < 1e-9 && a.ru === b.ru;
+function openScaleMenu(anchor) {
+  openMenu(anchor, (m) => {
+    const item = (label, sub, fn, on, icon) => {
+      const b = el('button', 'menu-item', { type: 'button' }); b.setAttribute('role', 'menuitem');
+      b.append(el('span', 'mi-check', { innerHTML: on ? '<svg><use href="#i-check"/></svg>' : (icon ? `<svg><use href="#${icon}"/></svg>` : '') }));
+      const t = el('span', '', { textContent: label }); if (sub) t.append(el('small', '', { textContent: ` ${sub}`, style: 'font-weight:500;color:var(--muted)' }));
+      b.append(t); b.addEventListener('click', () => { closeMenu(); fn(); }); m.append(b);
+    };
+    m.append(el('div', 'menu-title', { textContent: 'Measurement scale' }), el('div', 'menu-note', { textContent: `Now: ${scaleText(A.scale)}` }));
+    item('Calibrate…', 'Ctrl+Shift+C', measCalibrate, false, 'i-scale');
+    item('Custom scale…', 'type your own', () => { A.showScale = true; syncScaleUI(); $('msPv').focus(); $('msPv').select(); }, false, 'i-edit');
+    for (const [title, list] of SCALE_PRESETS) {
+      m.append(el('div', 'menu-sep'), el('div', 'menu-title', { textContent: title }));
+      for (const it of list) item(it.label, '', () => { measSetScale(it.sc); toast(`Scale set to ${scaleText(it.sc)}.`, 'success'); }, sameScale(A.scale, it.sc));
+    }
+  });
+}
+
+function measCalibrate() {
+  if (!S.pdf) return;
+  if (A.mode === 'edit') setMode('comment');
+  if (!canEdit()) return;
+  setTool('calib', true);
+  toast('Click two points whose real distance you know, for example the ends of a dimension on the drawing.');
+}
+const calS = { pts: null, p: null };
+function measAskReal(pts, p) {
+  const L = segLen(pts[0], pts[1]); calS.pts = pts; calS.p = p;
+  const du = METRIC.has(A.scale.ru) ? 'mm' : 'in';
+  $('calLen').textContent = `${fmtMeas(L / UNIT_PT[du])} ${du}`;
+  $('calUnit').value = A.scale.ru; $('calReal').value = ''; $('calNote').className = 'ed-txtnote'; $('calNote').textContent = 'Every measurement on this page will use the new scale.';
+  const dlg = $('calDlg'); dlg.hidden = false;
+  const mid = [(pts[0][0] + pts[1][0]) / 2, (pts[0][1] + pts[1][1]) / 2], vp = vp1(p), v = vp.convertToViewportPoint(mid[0], mid[1]), r = p.div.getBoundingClientRect();
+  const sx = r.left + (v[0] / vp.width) * r.width, sy = r.top + (v[1] / vp.height) * r.height, w = dlg.offsetWidth, h = dlg.offsetHeight, vr = viewer.getBoundingClientRect();
+  let y = sy + 18; if (y + h > innerHeight - 8) y = sy - h - 18;
+  dlg.style.left = `${Math.round(clampN(sx - w / 2, 8, innerWidth - w - 8))}px`; dlg.style.top = `${Math.round(clampN(y, vr.top + 4, innerHeight - h - 8))}px`;
+  setTool('select', true);
+  A.calDraft = { id: 'draft', type: 'dist', page: p.num, pts, calib: true, color: 'blue', width: WIDTHS[A.widthIdx], rects: [bboxPts(pts)], scale: A.scale, text: '', replies: [], quote: '' };
+  A.draft = A.calDraft; drawAnnots(p);
+  $('calReal').focus();
+}
+function calClose(ok) {
+  const dlg = $('calDlg'); if (dlg.hidden) return;
+  if (ok) {
+    const v = parseFloat($('calReal').value), unit = $('calUnit').value;
+    if (!(v > 0)) { $('calNote').className = 'ed-txtnote warn'; $('calNote').textContent = 'Type the real length as a number bigger than zero.'; $('calReal').focus(); return; }
+    const L = segLen(calS.pts[0], calS.pts[1]), pu = METRIC.has(unit) ? 'cm' : 'in', sc = { pv: 1, pu, rv: +(v / (L / UNIT_PT[pu])).toPrecision(6), ru: unit };
+    const items = A.items.filter((a) => MEAS.has(a.type) && a.page === calS.p.num);
+    measSetScale(sc, { items });
+    toast(`Scale set: ${scaleText(sc)}.${items.length ? ` ${items.length} ${items.length === 1 ? 'measurement' : 'measurements'} on this page updated.` : ''}`, 'success');
+  }
+  dlg.hidden = true; const pg = calS.p; A.calDraft = null; if (A.draft && A.draft.calib) A.draft = null; calS.pts = null; calS.p = null;
+  if (pg) drawAnnots(pg);
+  if (A.tool === 'calib') setTool('select', true);
+}
+$('calOk').addEventListener('click', () => calClose(true));
+$('calCancel').addEventListener('click', () => calClose(false));
+$('calDlg').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); calClose(true); }
+  else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); calClose(false); }
+  else e.stopPropagation();
+});
+
+/* ---------- writing one into the PDF (a standard measurement annotation, plus our own data) ---------- */
+const measFonts = new WeakMap();
+async function measWriteParts(a, H) {
+  const { ctx, doc, S_, form } = H, hex = lineColor(a), rgb = hexRgb(hex).join(' '), w = a.width || 2, pts = a.pts, f = (q) => `${r2(q[0])} ${r2(q[1])}`;
+  let font = measFonts.get(doc); if (!font) { font = doc.embedStandardFont('Helvetica-Bold'); measFonts.set(doc, font); }
+  const sc = scaleOk(a.scale) ? a.scale : A.scale, k = scaleK(sc), info = measInfo(a);
+  const size = 10, label = info.text.replace(/²/g, '²'), tw = font.widthOfTextAtSize(label, size), bw = tw + 8, bh = size + 6, cx = info.at[0], cy = info.at[1];
+  const ops = [`${rgb} RG ${w} w 1 J 1 j`];
+  const circle = (x, y, r) => { const c = 0.5523 * r; return `${r2(x + r)} ${r2(y)} m ${r2(x + r)} ${r2(y + c)} ${r2(x + c)} ${r2(y + r)} ${r2(x)} ${r2(y + r)} c ${r2(x - c)} ${r2(y + r)} ${r2(x - r)} ${r2(y + c)} ${r2(x - r)} ${r2(y)} c ${r2(x - r)} ${r2(y - c)} ${r2(x - c)} ${r2(y - r)} ${r2(x)} ${r2(y - r)} c ${r2(x + c)} ${r2(y - r)} ${r2(x + r)} ${r2(y - c)} ${r2(x + r)} ${r2(y)} c h f`; };
+  const path = pts.map((q, i) => `${f(q)} ${i ? 'l' : 'm'}`).join(' ');
+  if (a.type === 'area') ops.push('q /GS gs', `${rgb} rg`, `${path} h B`, 'Q');
+  else ops.push(`${path} S`);
+  if (a.type === 'dist' && pts.length > 1) {
+    const dx = pts[1][0] - pts[0][0], dy = pts[1][1] - pts[0][1], l = Math.hypot(dx, dy) || 1, nx = (-dy / l) * 5, ny = (dx / l) * 5;
+    for (const q of pts) ops.push(`${r2(q[0] - nx)} ${r2(q[1] - ny)} m ${r2(q[0] + nx)} ${r2(q[1] + ny)} l S`);
+  } else for (const q of pts) ops.push(`${rgb} rg`, circle(q[0], q[1], w / 2 + 1.6));
+  ops.push('q 1 1 1 rg', `${rgb} RG 0.8 w`, `${r2(cx - bw / 2)} ${r2(cy - bh / 2)} ${r2(bw)} ${r2(bh)} re B Q`, `BT /F1 ${size} Tf ${rgb} rg ${r2(cx - tw / 2)} ${r2(cy - size * 0.35)} Td ${font.encodeText(label).toString()} Tj ET`);
+  const bb = bboxPts(pts), m = w / 2 + 6;
+  const rect = [Math.min(bb[0] - m, cx - bw / 2 - 1), Math.min(bb[1] - m, cy - bh / 2 - 1), Math.max(bb[2] + m, cx + bw / 2 + 1), Math.max(bb[3] + m, cy + bh / 2 + 1)].map(r2);
+  const ap = form(rect, ops.join('\n'), false, { Font: { F1: font.ref }, ExtGState: { GS: { Type: 'ExtGState', ca: 0.14, CA: 1 } } });
+  const nf = (u, c) => ctx.obj({ Type: 'NumberFormat', U: S_(u), C: c, F: 'D', D: 100 });
+  const measure = ctx.obj({ Type: 'Measure', Subtype: 'RL', R: S_(scaleText(sc)), X: [nf(sc.ru, k)], D: [nf(sc.ru, 1)], A: [nf(`sq ${sc.ru}`, 1)] });
+  const extra = { BS: { W: w, S: 'S' }, Measure: measure };
+  let subtype;
+  if (a.type === 'dist') { subtype = 'Line'; Object.assign(extra, { L: [...pts[0], ...pts[1]].map(r2), LE: ['None', 'None'], IT: 'LineDimension' }); }
+  else { subtype = a.type === 'area' ? 'Polygon' : 'PolyLine'; Object.assign(extra, { Vertices: pts.flatMap((q) => q.map(r2)), IT: a.type === 'area' ? 'PolygonDimension' : 'PolyLineDimension' }); }
+  return { subtype, rect, ap, extra, hx: { rect: a.rects[0], width: w, pts, scale: sc } };
 }
 
 
