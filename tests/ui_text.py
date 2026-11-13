@@ -27,7 +27,7 @@ async def main():
         await pg.screenshot(path='/tmp/s_after.png')
         # change second line to bold sans in blue
         await pg.mouse.click(*pt(200,733)); await pg.wait_for_timeout(500)
-        await pg.click('#edTxtB'); await pg.fill('#edTxtCol','#0044aa'); await pg.fill('#edTxtIn','Isolation ✓ required – see 4.2'); 
+        await pg.select_option('#edTxtFam','Helvetica'); await pg.click('#edTxtB'); await pg.fill('#edTxtCol','#0044aa'); await pg.fill('#edTxtIn','Isolation ✓ required – see 4.2'); 
         print('note',await pg.inner_text('#edTxtNote'))
         await pg.click('#edTxtOk'); await pg.wait_for_timeout(2500)
         # undo / redo

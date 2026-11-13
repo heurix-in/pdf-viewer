@@ -82,8 +82,9 @@ const edFind = (uid) => { const n = edPageOfUid(uid); return edObjs(n).find((o) 
 
 const EDFAM = { Helvetica: 'Helvetica, Arial, "Liberation Sans", sans-serif', Times: '"Times New Roman", Times, "Liberation Serif", serif', Courier: '"Courier New", Courier, "Liberation Mono", monospace' };
 const edFamOf = (std) => (/^Times/.test(std) ? 'Times' : /^Courier/.test(std) ? 'Courier' : 'Helvetica');
-function edTxtWidth(tx, size) {
-  const std = tx.f || 'Helvetica';
+const edLook = (o, tx) => { if (tx.f) return { std: tx.f, fill: tx.c || '#000' }; try { const li = HXEdit.lineInfo(o, edCutOf(o)); return { std: li.std, fill: tx.c || li.fill || '#000' }; } catch (_) { return { std: 'Helvetica', fill: tx.c || '#000' }; } };
+function edTxtWidth(tx, size, std) {
+  std = std || tx.f || 'Helvetica';
   measureCtx.font = `${/Italic|Oblique/.test(std) ? 'italic ' : ''}${/Bold/.test(std) ? 'bold ' : ''}${size}px ${EDFAM[edFamOf(std)]}`;
   return measureCtx.measureText(tx.t || '').width;
 }
@@ -92,7 +93,7 @@ function edBox(o) {
   const tx = o.kind === 'text' && A.ed.txt && A.ed.txt[o.uid];
   if (tx) {
     const b = o.bbox, F = o.runs[0].F, flat = Math.abs(F[1]) < 1e-6 && Math.abs(F[2]) < 1e-6 && F[0] > 0 && F[3] > 0;
-    if (flat) { const w = edTxtWidth(tx, tx.s > 0 ? tx.s : o.fs); return [b[0], b[1], Math.max(b[2], b[0] + w), b[3]]; }
+    if (flat) { const w = edTxtWidth(tx, tx.s > 0 ? tx.s : o.fs, edLook(o, tx).std); return [b[0], b[1], Math.max(b[2], b[0] + w), b[3]]; }
     return b;
   }
   const xf = A.ed.xf[o.uid]; if (!xf) return o.bbox;
@@ -145,8 +146,8 @@ function drawEdit(p, vp, px, py, frag) {
         const o = info.byUid.get(uid), tx = A.ed.txt[uid]; if (!o) continue;
         const F = o.runs[0].F, flat = Math.abs(F[1]) < 1e-6 && Math.abs(F[2]) < 1e-6 && F[0] > 0 && F[3] > 0 && !((p.page.rotate + S.rotation) % 360);
         if (!flat) { box(o.bbox, 'gone'); continue; }
-        const size = tx.s > 0 ? tx.s : o.fs, b = boxOf(vp, edBox(o)), d = el('div', 'ed-newtxt', { textContent: tx.t });
-        d.style.cssText = `left:${px(b.x)};top:${py(b.y)};min-width:${px(b.w)};height:${py(b.h)};font:${/Italic|Oblique/.test(tx.f) ? 'italic ' : ''}${/Bold/.test(tx.f) ? 'bold ' : ''}calc(var(--total-scale-factor) * ${size}px) ${EDFAM[edFamOf(tx.f || '')]};color:${tx.c || '#000'}`;
+        const size = tx.s > 0 ? tx.s : o.fs, b = boxOf(vp, edBox(o)), d = el('div', 'ed-newtxt', { textContent: tx.t }), lk = edLook(o, tx);
+        d.style.cssText = `left:${px(b.x)};top:${py(b.y)};min-width:${px(b.w)};height:${py(b.h)};font:${/Italic|Oblique/.test(lk.std) ? 'italic ' : ''}${/Bold/.test(lk.std) ? 'bold ' : ''}calc(var(--total-scale-factor) * ${size}px) ${EDFAM[edFamOf(lk.std)]};color:${lk.fill}`;
         frag.append(d);
       }
       for (const uid of A.ed.del) { const o = info.byUid.get(uid); if (o && o.bbox) box(o.bbox, 'gone'); }
@@ -566,13 +567,13 @@ function edStartText(o, p) {
   const li = HXEdit.lineInfo(o, edCutOf(o)), tx = edTx()[o.uid];
   if (li.vert) { toast('Vertical text can’t be changed here. You can erase it and add a text box in Comment mode.'); return; }
   edTE.o = o; edTE.p = page; edTE.li = li; edTE.open = true;
-  edTE.orig = { t: li.text, f: li.std, s: Math.round(li.size * 100) / 100, c: edHexOf(li.fill) };
+  edTE.orig = { t: li.text, f: '', s: Math.round(li.size * 100) / 100, c: edHexOf(li.fill) };
   const unreadable = !tx && li.total > 0 && li.unknown > li.total / 2;
   const cur = tx || edTE.orig;
   $('edTxtIn').value = unreadable ? '' : cur.t;
-  $('edTxtFam').value = edFamOf(cur.f || li.std); $('edTxtB').setAttribute('aria-pressed', /Bold/.test(cur.f || li.std)); $('edTxtI').setAttribute('aria-pressed', /Italic|Oblique/.test(cur.f || li.std));
+  $('edTxtFam').value = cur.f ? edFamOf(cur.f) : ''; $('edTxtB').setAttribute('aria-pressed', /Bold/.test(cur.f || li.std)); $('edTxtI').setAttribute('aria-pressed', /Italic|Oblique/.test(cur.f || li.std)); edFamSync();
   $('edTxtSize').value = Math.round((cur.s > 0 ? cur.s : li.size) * 10) / 10; $('edTxtCol').value = edHexOf(cur.c || li.fill);
-  $('edTxtNote').className = 'ed-txtnote'; $('edTxtNote').textContent = unreadable ? 'The viewer can’t read the words of this line (its font has no text map). Type the new text.' : 'The line is rewritten in a standard font (Sans, Serif or Mono) of the same size and colour.';
+  $('edTxtNote').className = 'ed-txtnote'; $('edTxtNote').textContent = unreadable ? 'The viewer can’t read the words of this line (its font has no text map). Type the new text.' : 'The new text keeps the font, size and colour of the line. Pick Sans, Serif or Mono only if you want to change the font.';
   A.edSel = new Set([o.uid]); closeMenu(); hideObjbar(); edRedraw([page.num]); edSyncUI();
   const ed = $('edTxtEd'); ed.hidden = false; edPlaceText();
   const inp = $('edTxtIn'); inp.focus(); inp.select();
@@ -585,10 +586,11 @@ function edPlaceText() {
   let y = r.top - h - 10; if (y < vr.top + 6) y = r.bottom + 10;
   ed.style.left = `${Math.round(clampN(r.left, 8, innerWidth - w - 8))}px`; ed.style.top = `${Math.round(clampN(y, 8, innerHeight - h - 8))}px`;
 }
+function edFamSync() { const none = !$('edTxtFam').value; for (const id of ['edTxtB', 'edTxtI']) { $(id).disabled = none; } }
 function edTextValues() {
   const fam = $('edTxtFam').value, b = $('edTxtB').getAttribute('aria-pressed') === 'true', i = $('edTxtI').getAttribute('aria-pressed') === 'true';
   const size = parseFloat($('edTxtSize').value);
-  return { t: $('edTxtIn').value.replace(/[\r\n\t]+/g, ' '), f: HXEdit.stdName(fam, b, i), s: isFinite(size) && size >= 1 ? Math.min(size, 400) : edTE.orig.s, c: edHexOf($('edTxtCol').value) };
+  return { t: $('edTxtIn').value.replace(/[\r\n\t]+/g, ' '), f: fam ? HXEdit.stdName(fam, b, i) : '', s: isFinite(size) && size >= 1 ? Math.min(size, 400) : edTE.orig.s, c: edHexOf($('edTxtCol').value) };
 }
 function edTextNote() {
   const note = $('edTxtNote'), v = edTextValues(); let bad = '';
@@ -615,7 +617,7 @@ function edCloseText(apply) {
   toast(bad ? `Text changed. ${bad} ${bad === 1 ? 'character' : 'characters'} can’t be drawn in this font and became “?”.` : 'Text changed. Press Ctrl+Z to undo.', bad ? '' : 'success');
 }
 $('edTxtIn').addEventListener('input', edTextNote);
-for (const id of ['edTxtFam', 'edTxtSize', 'edTxtCol']) $(id).addEventListener('input', edTextNote);
+for (const id of ['edTxtFam', 'edTxtSize', 'edTxtCol']) $(id).addEventListener('input', () => { edFamSync(); edTextNote(); });
 for (const id of ['edTxtB', 'edTxtI']) $(id).addEventListener('click', (e) => { const b = e.currentTarget; b.setAttribute('aria-pressed', b.getAttribute('aria-pressed') !== 'true'); $('edTxtIn').focus(); });
 $('edTxtOk').addEventListener('click', () => edCloseText(true));
 $('edTxtCancel').addEventListener('click', () => edCloseText(false));

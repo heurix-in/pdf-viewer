@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-5aHran/yzrbPzfGIHpCeYOef9tVt/3hKz+R1gH+BUW8=' blob: 'wasm-unsafe-eval'; style-src 'unsafe-inline' https://fonts.googleapis.com; img-src data: blob:; font-src data: https://fonts.gstatic.com; worker-src blob:; connect-src data: blob: 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-EjCcTGKBKin+kY8s1ZZefiVyh1tjprEKpbMMxKFBMt0=' blob: 'wasm-unsafe-eval'; style-src 'unsafe-inline' https://fonts.googleapis.com; img-src data: blob:; font-src data: https://fonts.gstatic.com; worker-src blob:; connect-src data: blob: 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="description" content="Heurix PDF Viewer — read, search and print PDFs in your browser. Files never leave your computer.">
 <meta name="theme-color" content="#5b21b6">
 <title>Heurix PDF Viewer</title>
@@ -630,6 +630,7 @@ body[data-mode="edit"] .an:not(.an-ffr){pointer-events:none}
 .ed-txtrow input[type=number]{width:62px}
 .ed-txtrow input[type=color]{width:30px;height:30px;padding:0;border:1.5px solid var(--line);border-radius:8px;background:#fff;cursor:pointer}
 .ed-txtrow .tgl{width:30px;height:30px;border:1.5px solid var(--line);border-radius:8px;background:#fff;color:var(--ink-soft);font-size:14px}
+.ed-txtrow .tgl:disabled{opacity:.35;cursor:default}
 .ed-txtrow .tgl[aria-pressed="true"]{background:var(--wash);color:var(--violet);border-color:var(--violet-2)}
 .ed-txtrow .grow{flex:1}
 .ed-txtnote{margin-top:6px;font-size:12px;line-height:1.35;color:var(--muted);min-height:16px}
@@ -962,7 +963,7 @@ body.is-dragging[data-tool="dist"] *,body.is-dragging[data-tool="peri"] *,body.i
 <div class="ed-txted" id="edTxtEd" role="dialog" aria-label="Edit text" hidden>
   <input type="text" id="edTxtIn" spellcheck="false" autocomplete="off" aria-label="Text of this line">
   <div class="ed-txtrow">
-    <select id="edTxtFam" aria-label="Font" title="Font"><option value="Helvetica">Sans</option><option value="Times">Serif</option><option value="Courier">Mono</option></select>
+    <select id="edTxtFam" aria-label="Font" title="Font"><option value="">Same as PDF</option><option value="Helvetica">Sans</option><option value="Times">Serif</option><option value="Courier">Mono</option></select>
     <button class="tgl" id="edTxtB" type="button" aria-pressed="false" title="Bold"><b>B</b></button>
     <button class="tgl" id="edTxtI" type="button" aria-pressed="false" title="Italic"><i>I</i></button>
     <input type="number" id="edTxtSize" min="3" max="200" step="0.5" aria-label="Size" title="Size (points)">
@@ -5157,6 +5158,7 @@ const HXEdit = (() => {
   }
 
   /* ---------- fonts ---------- */
+  let fontUid = 0;
   const STD_NAMES = ['Helvetica', 'Helvetica-Bold', 'Helvetica-Oblique', 'Helvetica-BoldOblique', 'Times-Roman', 'Times-Bold', 'Times-Italic', 'Times-BoldItalic', 'Courier', 'Courier-Bold', 'Courier-Oblique', 'Courier-BoldOblique'];
   const stdCache = new Map(); let scratch = null;
   async function stdTable(PL, name) {
@@ -5251,7 +5253,7 @@ const HXEdit = (() => {
   }
   const DEFAULT_FONT = { two: false, vert: false, asc: 750, desc: -250, w: () => 500, fam: 'Helvetica', bold: false, italic: false, dec: (c) => (c >= 32 && c < 127 ? String.fromCharCode(c) : null) };
 
-  async function buildFont(PL, fdict) {
+  async function buildFont(PL, fdict, fref) {
     const { PDFName, PDFArray, PDFNumber, PDFDict, PDFRef } = PL, N = (s) => PDFName.of(s);
     const numOf = (v, d) => (v instanceof PDFNumber ? v.asNumber() : d);
     const nm = (v) => (v instanceof PDFName ? v.decodeText() : '');
@@ -5315,7 +5317,18 @@ const HXEdit = (() => {
       if (tu && tu.dict) { const m = parseCMap(decodeStream(PL, tu)); if (m.size) uni = m; }
       const simple = info.two ? null : simpleDecoder(PL, fdict);
       info.dec = (c) => { if (uni && uni.has(c)) return uni.get(c); return simple ? simple(c) : null; };
-    } catch (_) { info.dec = null; }
+      // which characters this font can draw again (the codes it already has), so changed text can keep the look of the original
+      info.fref = fref || null; info.sub = sub;
+      info.reuse = sub !== 'Type3' && !info.vert && !info.exotic && !!fref;
+      let embedded = false;
+      if (desc instanceof PDFDict) embedded = !!(desc.lookup(N('FontFile')) || desc.lookup(N('FontFile2')) || desc.lookup(N('FontFile3')));
+      const isSubset = /^[A-Z]{6}\+/.test(baseFont);
+      const rev = new Map(), put = (u, c) => { if (typeof u === 'string' && u && [...u].length === 1 && !rev.has(u) && info.w(c) > 0) rev.set(u, c); };
+      if (info.two) { if (uni) for (const [c, u] of uni) put(u, c); }
+      else if (uni && embedded && isSubset) { for (const [c, u] of uni) if (c < 256) put(u, c); }
+      else for (let c = 32; c < 256; c++) put(info.dec(c), c);
+      info.rev = rev;
+    } catch (_) { info.dec = null; info.rev = new Map(); info.reuse = false; }
     return info;
   }
 
@@ -5327,7 +5340,7 @@ const HXEdit = (() => {
     const fd = resDict.lookup(N('Font'));
     if (fd instanceof PDFDict) {
       for (const [k, v] of fd.entries()) {
-        try { const d = fd.lookup(k, PDFDict); fonts.set(k.decodeText(), await buildFont(PL, d)); } catch (_) { /* unreadable font */ }
+        try { const d = fd.lookup(k, PDFDict); fonts.set(k.decodeText(), await buildFont(PL, d, v)); } catch (_) { /* unreadable font */ }
       }
     }
     const xd = resDict.lookup(N('XObject'));
@@ -5411,7 +5424,7 @@ const HXEdit = (() => {
         const el = { c: codes, g0: glyphs.length }; elems.push(el);
         for (const code of codes) {
           const w = font.w(code), adv = ((w / 1000) * fs + gs.tc + (!font.two && code === 32 ? gs.tw : 0)) * th, gw = (w / 1000) * fs * th;
-          glyphs.push({ x0: x, x1: x + gw, adv, tc: gs.tc * th, u: font.dec ? font.dec(code) : (!font.two && code >= 32 && code < 127 ? String.fromCharCode(code) : null) });
+          glyphs.push({ code, x0: x, x1: x + gw, adv, tc: gs.tc * th, u: font.dec ? font.dec(code) : (!font.two && code >= 32 && code < 127 ? String.fromCharCode(code) : null) });
           if (x < xmin) xmin = x; if (x + gw > xmax) xmax = x + gw;
           x += adv;
         }
@@ -5427,7 +5440,7 @@ const HXEdit = (() => {
         const bx = q.map((p) => p[0]), by = q.map((p) => p[1]);
         run = {
           id: idOf(s), kind: 'text', ranges: [[s, e]], bbox: [Math.min(...bx), Math.min(...by), Math.max(...bx), Math.max(...by)], quad: q, F, fs, th,
-          ys, yh, xmin, xmax, elems, glyphs, two: font.two, exotic: !!font.exotic, ts: gs.ts, fam: font.fam || 'Helvetica', bold: !!font.bold, italic: !!font.italic, op: kind, dq: dq || null, chainedNext: false, vert: font.vert, fill: toHex(gs.fill), pageSize: Math.abs(fs) * scaleOf(F), z: 0
+          ys, yh, xmin, xmax, elems, glyphs, two: font.two, exotic: !!font.exotic, ts: gs.ts, fam: font.fam || 'Helvetica', bold: !!font.bold, italic: !!font.italic, op: kind, dq: dq || null, chainedNext: false, vert: font.vert, fill: toHex(gs.fill), pageSize: Math.abs(fs) * scaleOf(F), tcv: gs.tc, twv: gs.tw, font, z: 0
         };
         runs.push(run);
       } else if (glyphs.length || elems.length) {
@@ -5631,8 +5644,9 @@ const HXEdit = (() => {
 
   /* ---------- the words of a line of text ---------- */
   // cutOf(run) -> Set of glyph indexes that are already erased (or null)
-  function lineText(o, cutOf) {
-    let out = '', unk = 0, tot = 0, prev = null;
+  // one entry per character of the line: {ch, run, g (the glyph it comes from), gap (a space inferred from the distance between glyphs), cont}
+  function lineChars(o, cutOf) {
+    const out = []; let prev = null, unk = 0, tot = 0, text = '';
     for (const r of o.runs) {
       const cs = cutOf ? cutOf(r) : null;
       const F = r.F, ul = Math.hypot(F[0], F[1]) || 1, ux = F[0] / ul, uy = F[1] / ul;
@@ -5641,15 +5655,21 @@ const HXEdit = (() => {
         const g = r.glyphs[i], st = ap(F, g.x0, 0);
         let ch = g.u; tot++;
         if (ch == null || ch === '�') { ch = '?'; unk++; }
-        if (prev && out && !/\s$/.test(out) && ch !== ' ') {
+        if (prev && text && !/\s$/.test(text) && ch !== ' ') {
           const du = (st[0] - prev.end[0]) * ux + (st[1] - prev.end[1]) * uy - prev.tc;
-          if (du > 0.18 * Math.max(r.pageSize, 1)) out += ' ';
+          if (du > 0.18 * Math.max(r.pageSize, 1)) { out.push({ ch: ' ', run: prev.run, g: null, gap: du, uv: [ux, uy] }); text += ' '; }
         }
-        out += ch;
-        prev = { end: ap(F, g.x1, 0), tc: g.tc * ul };
+        const cps = Array.from(ch);
+        cps.forEach((c, k) => out.push({ ch: c, run: r, g, i, cont: k > 0, st }));
+        text += ch;
+        prev = { end: ap(F, g.x1, 0), tc: g.tc * ul, run: r };
       }
     }
-    return { text: out, unknown: unk, total: tot };
+    return { chars: out, text, unknown: unk, total: tot };
+  }
+  function lineText(o, cutOf) {
+    const { text, unknown, total } = lineChars(o, cutOf);
+    return { text, unknown, total };
   }
   // how a line looks, so a replacement can be drawn the same way
   function lineInfo(o, cutOf) {
@@ -5858,16 +5878,66 @@ const HXEdit = (() => {
       // changed lines of text: written new, in a standard font, where the old line was
       let tail = '';
       for (const { o, tx } of edIn.out) {
-        const text = String(tx.t || ''); if (!text.trim()) continue;
+        const text = String(tx.t || '').normalize('NFC'); if (!text.trim()) continue;
         const cutOf = (r) => { const c = pe.cut[A.prefix + r.id]; if (!c) return null; const set = new Set(); for (const [a, b] of c) for (let i = a; i < b; i++) set.add(i); return set; };
-        const li = lineInfo(o, cutOf), std = STD_NAMES.includes(tx.f) ? tx.f : li.std;
-        let font = fontCache.get(std); if (!font) { font = doc.embedStandardFont(std); fontCache.set(std, font); }
+        const li = lineInfo(o, cutOf), lc = lineChars(o, cutOf);
         if (!pp.nf) { const nf = PL.PDFDict.withContext(ctx), old = pp.nr.lookup(N('Font')); if (old instanceof PL.PDFDict) for (const [k, v] of old.entries()) nf.set(k, v); pp.nr.set(N('Font'), nf); pp.nf = nf; pp.fn = new Map(); }
-        let fname = pp.fn.get(std); if (!fname) { fname = `HxT${pp.fn.size + 1}${Date.now().toString(36)}`; pp.fn.set(std, fname); pp.nf.set(N(fname), font.ref); }
-        const fit = fitToFont(font, text);
-        const F = li.F, ul = Math.hypot(F[0], F[1]) || 1, vl = Math.hypot(F[2], F[3]) || 1;
-        const col = fromHex(tx.c || li.fill) || [0, 0, 0], size = tx.s > 0 ? tx.s : li.size;
-        tail += `q ${col.map((v) => fmt(v / 255)).join(' ')} rg BT /${fname} ${fmt(size)} Tf ${[F[0] / ul, F[1] / ul, F[2] / vl, F[3] / vl, li.origin[0], li.origin[1]].map(fmt).join(' ')} Tm ${font.encodeText(fit.text).toString()} Tj ET Q\n`;
+        const resName = (key, ref) => { let n = pp.fn.get(key); if (!n) { n = `HxT${pp.fn.size + 1}${Date.now().toString(36)}`; pp.fn.set(key, n); pp.nf.set(N(n), ref); } return n; };
+        const stdFont = (std) => { let f = fontCache.get(std); if (!f) { f = doc.embedStandardFont(std); fontCache.set(std, f); } return f; };
+        const e0 = lc.chars.find((c) => c.g && c.st), F = e0 ? e0.run.F : li.F, origin = e0 ? e0.st : li.origin, ul = Math.hypot(F[0], F[1]) || 1, vl = Math.hypot(F[2], F[3]) || 1;
+        const sizeOv = tx.s > 0 && Math.abs(tx.s - li.size) > 0.05 ? tx.s : 0, colOv = tx.c && tx.c.toLowerCase() !== String(li.fill).toLowerCase() ? tx.c : null;
+        const forced = STD_NAMES.includes(tx.f) ? tx.f : null;      // a font picked by hand; otherwise every character keeps the look it had
+        const oldC = lc.chars, newC = Array.from(text);
+        // what stays as it was (start and end of the line), the middle is new
+        let pre = 0; while (pre < oldC.length && pre < newC.length && oldC[pre].ch === newC[pre]) pre++;
+        let suf = 0; while (suf < oldC.length - pre && suf < newC.length - pre && oldC[oldC.length - 1 - suf].ch === newC[newC.length - 1 - suf]) suf++;
+        const midOld = oldC.length - pre - suf;
+        const segs = []; let cur = null;
+        const fuid = (f) => (f.uid ??= ++fontUid);
+        const seg = (key, mk) => { if (!cur || cur.key !== key) { cur = { key, ...mk(), parts: [], str: '', hex: '' }; segs.push(cur); } return cur; };
+        const flush = (sg) => { if (sg.hex) { sg.parts.push(`<${sg.hex}>`); sg.hex = ''; } if (sg.str) { sg.parts.push(stdFont(sg.std).encodeText(sg.str).toString()); sg.str = ''; } };
+        const styleOf = (r) => ({ size: sizeOv || r.pageSize, col: colOv || r.fill || li.fill || '#000000', th: r.th || 1, tc: (r.tcv || 0) * ul, tw: (r.twv || 0) * ul, rise: (r.ts || 0) * ul });
+        const styKey = (st) => `${fmt(st.size)}|${st.col}|${fmt(st.th)}|${fmt(st.tc)}|${fmt(st.tw)}|${fmt(st.rise)}`;
+        const num = (n) => { const l = segs[segs.length - 1]; if (!l) return; flush(l); l.parts.push(fmt(n)); };      // a move in thousandths of the size
+        const gapN = (du) => { const l = segs[segs.length - 1]; return l ? -du * 1000 / ((l.size || 1) * (l.th || 1)) : 0; };
+        const put = (r, entry, ch) => {
+          const st = styleOf(r), f = r.font, sk = styKey(st);
+          if (!forced && entry && entry.g && !entry.cont && f && f.reuse && f.fref) {         // the same glyph in the same font, exactly as it was
+            const sg = seg(`o${fuid(f)}|${sk}`, () => ({ ...st, orig: f })); flush(sg);
+            const code = entry.g.code; sg.parts.push(`<${f.two ? code.toString(16).padStart(4, '0') : hex2(code & 255)}>`); return;
+          }
+          if (entry && entry.cont) return;
+          if (!forced && f && f.reuse && f.fref && f.rev.has(ch)) {                           // a letter the original font already holds
+            const sg = seg(`o${fuid(f)}|${sk}`, () => ({ ...st, orig: f })); flush(sg);
+            const code = f.rev.get(ch); sg.parts.push(`<${f.two ? code.toString(16).padStart(4, '0') : hex2(code & 255)}>`); return;
+          }
+          if (!forced && ch === ' ' && f && f.reuse && segs.length) { num(-250); return; }
+          const std = forced || stdName(r.fam, r.bold, r.italic), font = stdFont(std), fit = fitToFont(font, ch);
+          const sg = seg(`s${std}|${sk}`, () => ({ ...st, orig: null, std })); sg.str += fit.text;
+        };
+        // a gap (a space that was only a distance) is carried as a distance; "o?" segments reuse the previous one's style, so merge them into it
+        const pick = (k) => { if (!oldC.length) return null; return oldC[Math.max(0, Math.min(oldC.length - 1, k))]; };
+        for (let k = 0; k < newC.length; k++) {
+          let entry = null, srcE;
+          if (forced) { srcE = pick(Math.min(k, oldC.length - 1)); if (srcE) srcE = { ...srcE, run: oldC[0].run }; }
+          else if (k < pre) { entry = oldC[k]; srcE = entry; }
+          else if (k >= newC.length - suf) { entry = oldC[oldC.length - (newC.length - k)]; srcE = entry; }
+          else { srcE = midOld > 0 ? pick(pre + Math.min(k - pre, midOld - 1)) : pick(pre > 0 ? pre - 1 : 0); }
+          if (!srcE) continue;
+          const r = srcE.run;
+          if (!forced && entry && entry.gap !== undefined && entry.g === null) { if (segs.length) num(gapN(entry.gap)); else put(r, null, ' '); continue; }   // an unchanged gap keeps its distance
+          put(r, entry, newC[k]);
+        }
+        for (const sg of segs) flush(sg);
+        if (!segs.length) continue;
+        let ops = `q BT ${[F[0] / ul, F[1] / ul, F[2] / vl, F[3] / vl, origin[0], origin[1]].map(fmt).join(' ')} Tm `;
+        for (const sg of segs) {
+          if (!sg.parts.length) continue;
+          const font = sg.orig ? null : stdFont(sg.std), name = sg.orig ? resName(`o${fuid(sg.orig)}`, sg.orig.fref) : resName(`s${sg.std}`, font.ref);
+          const col = fromHex(sg.col) || [0, 0, 0];
+          ops += `${col.map((v) => fmt(v / 255)).join(' ')} rg /${name} ${fmt(sg.size)} Tf ${fmt(sg.tc)} Tc ${fmt(sg.tw)} Tw ${fmt(sg.th * 100)} Tz ${fmt(sg.rise)} Ts [${sg.parts.join(' ')}] TJ `;
+        }
+        tail += `${ops}ET Q\n`;
         touchedText = true;
       }
       // additions
@@ -6051,8 +6121,9 @@ const edFind = (uid) => { const n = edPageOfUid(uid); return edObjs(n).find((o) 
 
 const EDFAM = { Helvetica: 'Helvetica, Arial, "Liberation Sans", sans-serif', Times: '"Times New Roman", Times, "Liberation Serif", serif', Courier: '"Courier New", Courier, "Liberation Mono", monospace' };
 const edFamOf = (std) => (/^Times/.test(std) ? 'Times' : /^Courier/.test(std) ? 'Courier' : 'Helvetica');
-function edTxtWidth(tx, size) {
-  const std = tx.f || 'Helvetica';
+const edLook = (o, tx) => { if (tx.f) return { std: tx.f, fill: tx.c || '#000' }; try { const li = HXEdit.lineInfo(o, edCutOf(o)); return { std: li.std, fill: tx.c || li.fill || '#000' }; } catch (_) { return { std: 'Helvetica', fill: tx.c || '#000' }; } };
+function edTxtWidth(tx, size, std) {
+  std = std || tx.f || 'Helvetica';
   measureCtx.font = `${/Italic|Oblique/.test(std) ? 'italic ' : ''}${/Bold/.test(std) ? 'bold ' : ''}${size}px ${EDFAM[edFamOf(std)]}`;
   return measureCtx.measureText(tx.t || '').width;
 }
@@ -6061,7 +6132,7 @@ function edBox(o) {
   const tx = o.kind === 'text' && A.ed.txt && A.ed.txt[o.uid];
   if (tx) {
     const b = o.bbox, F = o.runs[0].F, flat = Math.abs(F[1]) < 1e-6 && Math.abs(F[2]) < 1e-6 && F[0] > 0 && F[3] > 0;
-    if (flat) { const w = edTxtWidth(tx, tx.s > 0 ? tx.s : o.fs); return [b[0], b[1], Math.max(b[2], b[0] + w), b[3]]; }
+    if (flat) { const w = edTxtWidth(tx, tx.s > 0 ? tx.s : o.fs, edLook(o, tx).std); return [b[0], b[1], Math.max(b[2], b[0] + w), b[3]]; }
     return b;
   }
   const xf = A.ed.xf[o.uid]; if (!xf) return o.bbox;
@@ -6114,8 +6185,8 @@ function drawEdit(p, vp, px, py, frag) {
         const o = info.byUid.get(uid), tx = A.ed.txt[uid]; if (!o) continue;
         const F = o.runs[0].F, flat = Math.abs(F[1]) < 1e-6 && Math.abs(F[2]) < 1e-6 && F[0] > 0 && F[3] > 0 && !((p.page.rotate + S.rotation) % 360);
         if (!flat) { box(o.bbox, 'gone'); continue; }
-        const size = tx.s > 0 ? tx.s : o.fs, b = boxOf(vp, edBox(o)), d = el('div', 'ed-newtxt', { textContent: tx.t });
-        d.style.cssText = `left:${px(b.x)};top:${py(b.y)};min-width:${px(b.w)};height:${py(b.h)};font:${/Italic|Oblique/.test(tx.f) ? 'italic ' : ''}${/Bold/.test(tx.f) ? 'bold ' : ''}calc(var(--total-scale-factor) * ${size}px) ${EDFAM[edFamOf(tx.f || '')]};color:${tx.c || '#000'}`;
+        const size = tx.s > 0 ? tx.s : o.fs, b = boxOf(vp, edBox(o)), d = el('div', 'ed-newtxt', { textContent: tx.t }), lk = edLook(o, tx);
+        d.style.cssText = `left:${px(b.x)};top:${py(b.y)};min-width:${px(b.w)};height:${py(b.h)};font:${/Italic|Oblique/.test(lk.std) ? 'italic ' : ''}${/Bold/.test(lk.std) ? 'bold ' : ''}calc(var(--total-scale-factor) * ${size}px) ${EDFAM[edFamOf(lk.std)]};color:${lk.fill}`;
         frag.append(d);
       }
       for (const uid of A.ed.del) { const o = info.byUid.get(uid); if (o && o.bbox) box(o.bbox, 'gone'); }
@@ -6535,13 +6606,13 @@ function edStartText(o, p) {
   const li = HXEdit.lineInfo(o, edCutOf(o)), tx = edTx()[o.uid];
   if (li.vert) { toast('Vertical text can’t be changed here. You can erase it and add a text box in Comment mode.'); return; }
   edTE.o = o; edTE.p = page; edTE.li = li; edTE.open = true;
-  edTE.orig = { t: li.text, f: li.std, s: Math.round(li.size * 100) / 100, c: edHexOf(li.fill) };
+  edTE.orig = { t: li.text, f: '', s: Math.round(li.size * 100) / 100, c: edHexOf(li.fill) };
   const unreadable = !tx && li.total > 0 && li.unknown > li.total / 2;
   const cur = tx || edTE.orig;
   $('edTxtIn').value = unreadable ? '' : cur.t;
-  $('edTxtFam').value = edFamOf(cur.f || li.std); $('edTxtB').setAttribute('aria-pressed', /Bold/.test(cur.f || li.std)); $('edTxtI').setAttribute('aria-pressed', /Italic|Oblique/.test(cur.f || li.std));
+  $('edTxtFam').value = cur.f ? edFamOf(cur.f) : ''; $('edTxtB').setAttribute('aria-pressed', /Bold/.test(cur.f || li.std)); $('edTxtI').setAttribute('aria-pressed', /Italic|Oblique/.test(cur.f || li.std)); edFamSync();
   $('edTxtSize').value = Math.round((cur.s > 0 ? cur.s : li.size) * 10) / 10; $('edTxtCol').value = edHexOf(cur.c || li.fill);
-  $('edTxtNote').className = 'ed-txtnote'; $('edTxtNote').textContent = unreadable ? 'The viewer can’t read the words of this line (its font has no text map). Type the new text.' : 'The line is rewritten in a standard font (Sans, Serif or Mono) of the same size and colour.';
+  $('edTxtNote').className = 'ed-txtnote'; $('edTxtNote').textContent = unreadable ? 'The viewer can’t read the words of this line (its font has no text map). Type the new text.' : 'The new text keeps the font, size and colour of the line. Pick Sans, Serif or Mono only if you want to change the font.';
   A.edSel = new Set([o.uid]); closeMenu(); hideObjbar(); edRedraw([page.num]); edSyncUI();
   const ed = $('edTxtEd'); ed.hidden = false; edPlaceText();
   const inp = $('edTxtIn'); inp.focus(); inp.select();
@@ -6554,10 +6625,11 @@ function edPlaceText() {
   let y = r.top - h - 10; if (y < vr.top + 6) y = r.bottom + 10;
   ed.style.left = `${Math.round(clampN(r.left, 8, innerWidth - w - 8))}px`; ed.style.top = `${Math.round(clampN(y, 8, innerHeight - h - 8))}px`;
 }
+function edFamSync() { const none = !$('edTxtFam').value; for (const id of ['edTxtB', 'edTxtI']) { $(id).disabled = none; } }
 function edTextValues() {
   const fam = $('edTxtFam').value, b = $('edTxtB').getAttribute('aria-pressed') === 'true', i = $('edTxtI').getAttribute('aria-pressed') === 'true';
   const size = parseFloat($('edTxtSize').value);
-  return { t: $('edTxtIn').value.replace(/[\r\n\t]+/g, ' '), f: HXEdit.stdName(fam, b, i), s: isFinite(size) && size >= 1 ? Math.min(size, 400) : edTE.orig.s, c: edHexOf($('edTxtCol').value) };
+  return { t: $('edTxtIn').value.replace(/[\r\n\t]+/g, ' '), f: fam ? HXEdit.stdName(fam, b, i) : '', s: isFinite(size) && size >= 1 ? Math.min(size, 400) : edTE.orig.s, c: edHexOf($('edTxtCol').value) };
 }
 function edTextNote() {
   const note = $('edTxtNote'), v = edTextValues(); let bad = '';
@@ -6584,7 +6656,7 @@ function edCloseText(apply) {
   toast(bad ? `Text changed. ${bad} ${bad === 1 ? 'character' : 'characters'} can’t be drawn in this font and became “?”.` : 'Text changed. Press Ctrl+Z to undo.', bad ? '' : 'success');
 }
 $('edTxtIn').addEventListener('input', edTextNote);
-for (const id of ['edTxtFam', 'edTxtSize', 'edTxtCol']) $(id).addEventListener('input', edTextNote);
+for (const id of ['edTxtFam', 'edTxtSize', 'edTxtCol']) $(id).addEventListener('input', () => { edFamSync(); edTextNote(); });
 for (const id of ['edTxtB', 'edTxtI']) $(id).addEventListener('click', (e) => { const b = e.currentTarget; b.setAttribute('aria-pressed', b.getAttribute('aria-pressed') !== 'true'); $('edTxtIn').focus(); });
 $('edTxtOk').addEventListener('click', () => edCloseText(true));
 $('edTxtCancel').addEventListener('click', () => edCloseText(false));

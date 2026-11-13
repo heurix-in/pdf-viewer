@@ -178,6 +178,7 @@ const HXEdit = (() => {
   }
 
   /* ---------- fonts ---------- */
+  let fontUid = 0;
   const STD_NAMES = ['Helvetica', 'Helvetica-Bold', 'Helvetica-Oblique', 'Helvetica-BoldOblique', 'Times-Roman', 'Times-Bold', 'Times-Italic', 'Times-BoldItalic', 'Courier', 'Courier-Bold', 'Courier-Oblique', 'Courier-BoldOblique'];
   const stdCache = new Map(); let scratch = null;
   async function stdTable(PL, name) {
@@ -272,7 +273,7 @@ const HXEdit = (() => {
   }
   const DEFAULT_FONT = { two: false, vert: false, asc: 750, desc: -250, w: () => 500, fam: 'Helvetica', bold: false, italic: false, dec: (c) => (c >= 32 && c < 127 ? String.fromCharCode(c) : null) };
 
-  async function buildFont(PL, fdict) {
+  async function buildFont(PL, fdict, fref) {
     const { PDFName, PDFArray, PDFNumber, PDFDict, PDFRef } = PL, N = (s) => PDFName.of(s);
     const numOf = (v, d) => (v instanceof PDFNumber ? v.asNumber() : d);
     const nm = (v) => (v instanceof PDFName ? v.decodeText() : '');
@@ -336,7 +337,18 @@ const HXEdit = (() => {
       if (tu && tu.dict) { const m = parseCMap(decodeStream(PL, tu)); if (m.size) uni = m; }
       const simple = info.two ? null : simpleDecoder(PL, fdict);
       info.dec = (c) => { if (uni && uni.has(c)) return uni.get(c); return simple ? simple(c) : null; };
-    } catch (_) { info.dec = null; }
+      // which characters this font can draw again (the codes it already has), so changed text can keep the look of the original
+      info.fref = fref || null; info.sub = sub;
+      info.reuse = sub !== 'Type3' && !info.vert && !info.exotic && !!fref;
+      let embedded = false;
+      if (desc instanceof PDFDict) embedded = !!(desc.lookup(N('FontFile')) || desc.lookup(N('FontFile2')) || desc.lookup(N('FontFile3')));
+      const isSubset = /^[A-Z]{6}\+/.test(baseFont);
+      const rev = new Map(), put = (u, c) => { if (typeof u === 'string' && u && [...u].length === 1 && !rev.has(u) && info.w(c) > 0) rev.set(u, c); };
+      if (info.two) { if (uni) for (const [c, u] of uni) put(u, c); }
+      else if (uni && embedded && isSubset) { for (const [c, u] of uni) if (c < 256) put(u, c); }
+      else for (let c = 32; c < 256; c++) put(info.dec(c), c);
+      info.rev = rev;
+    } catch (_) { info.dec = null; info.rev = new Map(); info.reuse = false; }
     return info;
   }
 
@@ -348,7 +360,7 @@ const HXEdit = (() => {
     const fd = resDict.lookup(N('Font'));
     if (fd instanceof PDFDict) {
       for (const [k, v] of fd.entries()) {
-        try { const d = fd.lookup(k, PDFDict); fonts.set(k.decodeText(), await buildFont(PL, d)); } catch (_) { /* unreadable font */ }
+        try { const d = fd.lookup(k, PDFDict); fonts.set(k.decodeText(), await buildFont(PL, d, v)); } catch (_) { /* unreadable font */ }
       }
     }
     const xd = resDict.lookup(N('XObject'));
@@ -432,7 +444,7 @@ const HXEdit = (() => {
         const el = { c: codes, g0: glyphs.length }; elems.push(el);
         for (const code of codes) {
           const w = font.w(code), adv = ((w / 1000) * fs + gs.tc + (!font.two && code === 32 ? gs.tw : 0)) * th, gw = (w / 1000) * fs * th;
-          glyphs.push({ x0: x, x1: x + gw, adv, tc: gs.tc * th, u: font.dec ? font.dec(code) : (!font.two && code >= 32 && code < 127 ? String.fromCharCode(code) : null) });
+          glyphs.push({ code, x0: x, x1: x + gw, adv, tc: gs.tc * th, u: font.dec ? font.dec(code) : (!font.two && code >= 32 && code < 127 ? String.fromCharCode(code) : null) });
           if (x < xmin) xmin = x; if (x + gw > xmax) xmax = x + gw;
           x += adv;
         }
@@ -448,7 +460,7 @@ const HXEdit = (() => {
         const bx = q.map((p) => p[0]), by = q.map((p) => p[1]);
         run = {
           id: idOf(s), kind: 'text', ranges: [[s, e]], bbox: [Math.min(...bx), Math.min(...by), Math.max(...bx), Math.max(...by)], quad: q, F, fs, th,
-          ys, yh, xmin, xmax, elems, glyphs, two: font.two, exotic: !!font.exotic, ts: gs.ts, fam: font.fam || 'Helvetica', bold: !!font.bold, italic: !!font.italic, op: kind, dq: dq || null, chainedNext: false, vert: font.vert, fill: toHex(gs.fill), pageSize: Math.abs(fs) * scaleOf(F), z: 0
+          ys, yh, xmin, xmax, elems, glyphs, two: font.two, exotic: !!font.exotic, ts: gs.ts, fam: font.fam || 'Helvetica', bold: !!font.bold, italic: !!font.italic, op: kind, dq: dq || null, chainedNext: false, vert: font.vert, fill: toHex(gs.fill), pageSize: Math.abs(fs) * scaleOf(F), tcv: gs.tc, twv: gs.tw, font, z: 0
         };
         runs.push(run);
       } else if (glyphs.length || elems.length) {
@@ -652,8 +664,9 @@ const HXEdit = (() => {
 
   /* ---------- the words of a line of text ---------- */
   // cutOf(run) -> Set of glyph indexes that are already erased (or null)
-  function lineText(o, cutOf) {
-    let out = '', unk = 0, tot = 0, prev = null;
+  // one entry per character of the line: {ch, run, g (the glyph it comes from), gap (a space inferred from the distance between glyphs), cont}
+  function lineChars(o, cutOf) {
+    const out = []; let prev = null, unk = 0, tot = 0, text = '';
     for (const r of o.runs) {
       const cs = cutOf ? cutOf(r) : null;
       const F = r.F, ul = Math.hypot(F[0], F[1]) || 1, ux = F[0] / ul, uy = F[1] / ul;
@@ -662,15 +675,21 @@ const HXEdit = (() => {
         const g = r.glyphs[i], st = ap(F, g.x0, 0);
         let ch = g.u; tot++;
         if (ch == null || ch === '�') { ch = '?'; unk++; }
-        if (prev && out && !/\s$/.test(out) && ch !== ' ') {
+        if (prev && text && !/\s$/.test(text) && ch !== ' ') {
           const du = (st[0] - prev.end[0]) * ux + (st[1] - prev.end[1]) * uy - prev.tc;
-          if (du > 0.18 * Math.max(r.pageSize, 1)) out += ' ';
+          if (du > 0.18 * Math.max(r.pageSize, 1)) { out.push({ ch: ' ', run: prev.run, g: null, gap: du, uv: [ux, uy] }); text += ' '; }
         }
-        out += ch;
-        prev = { end: ap(F, g.x1, 0), tc: g.tc * ul };
+        const cps = Array.from(ch);
+        cps.forEach((c, k) => out.push({ ch: c, run: r, g, i, cont: k > 0, st }));
+        text += ch;
+        prev = { end: ap(F, g.x1, 0), tc: g.tc * ul, run: r };
       }
     }
-    return { text: out, unknown: unk, total: tot };
+    return { chars: out, text, unknown: unk, total: tot };
+  }
+  function lineText(o, cutOf) {
+    const { text, unknown, total } = lineChars(o, cutOf);
+    return { text, unknown, total };
   }
   // how a line looks, so a replacement can be drawn the same way
   function lineInfo(o, cutOf) {
@@ -879,16 +898,66 @@ const HXEdit = (() => {
       // changed lines of text: written new, in a standard font, where the old line was
       let tail = '';
       for (const { o, tx } of edIn.out) {
-        const text = String(tx.t || ''); if (!text.trim()) continue;
+        const text = String(tx.t || '').normalize('NFC'); if (!text.trim()) continue;
         const cutOf = (r) => { const c = pe.cut[A.prefix + r.id]; if (!c) return null; const set = new Set(); for (const [a, b] of c) for (let i = a; i < b; i++) set.add(i); return set; };
-        const li = lineInfo(o, cutOf), std = STD_NAMES.includes(tx.f) ? tx.f : li.std;
-        let font = fontCache.get(std); if (!font) { font = doc.embedStandardFont(std); fontCache.set(std, font); }
+        const li = lineInfo(o, cutOf), lc = lineChars(o, cutOf);
         if (!pp.nf) { const nf = PL.PDFDict.withContext(ctx), old = pp.nr.lookup(N('Font')); if (old instanceof PL.PDFDict) for (const [k, v] of old.entries()) nf.set(k, v); pp.nr.set(N('Font'), nf); pp.nf = nf; pp.fn = new Map(); }
-        let fname = pp.fn.get(std); if (!fname) { fname = `HxT${pp.fn.size + 1}${Date.now().toString(36)}`; pp.fn.set(std, fname); pp.nf.set(N(fname), font.ref); }
-        const fit = fitToFont(font, text);
-        const F = li.F, ul = Math.hypot(F[0], F[1]) || 1, vl = Math.hypot(F[2], F[3]) || 1;
-        const col = fromHex(tx.c || li.fill) || [0, 0, 0], size = tx.s > 0 ? tx.s : li.size;
-        tail += `q ${col.map((v) => fmt(v / 255)).join(' ')} rg BT /${fname} ${fmt(size)} Tf ${[F[0] / ul, F[1] / ul, F[2] / vl, F[3] / vl, li.origin[0], li.origin[1]].map(fmt).join(' ')} Tm ${font.encodeText(fit.text).toString()} Tj ET Q\n`;
+        const resName = (key, ref) => { let n = pp.fn.get(key); if (!n) { n = `HxT${pp.fn.size + 1}${Date.now().toString(36)}`; pp.fn.set(key, n); pp.nf.set(N(n), ref); } return n; };
+        const stdFont = (std) => { let f = fontCache.get(std); if (!f) { f = doc.embedStandardFont(std); fontCache.set(std, f); } return f; };
+        const e0 = lc.chars.find((c) => c.g && c.st), F = e0 ? e0.run.F : li.F, origin = e0 ? e0.st : li.origin, ul = Math.hypot(F[0], F[1]) || 1, vl = Math.hypot(F[2], F[3]) || 1;
+        const sizeOv = tx.s > 0 && Math.abs(tx.s - li.size) > 0.05 ? tx.s : 0, colOv = tx.c && tx.c.toLowerCase() !== String(li.fill).toLowerCase() ? tx.c : null;
+        const forced = STD_NAMES.includes(tx.f) ? tx.f : null;      // a font picked by hand; otherwise every character keeps the look it had
+        const oldC = lc.chars, newC = Array.from(text);
+        // what stays as it was (start and end of the line), the middle is new
+        let pre = 0; while (pre < oldC.length && pre < newC.length && oldC[pre].ch === newC[pre]) pre++;
+        let suf = 0; while (suf < oldC.length - pre && suf < newC.length - pre && oldC[oldC.length - 1 - suf].ch === newC[newC.length - 1 - suf]) suf++;
+        const midOld = oldC.length - pre - suf;
+        const segs = []; let cur = null;
+        const fuid = (f) => (f.uid ??= ++fontUid);
+        const seg = (key, mk) => { if (!cur || cur.key !== key) { cur = { key, ...mk(), parts: [], str: '', hex: '' }; segs.push(cur); } return cur; };
+        const flush = (sg) => { if (sg.hex) { sg.parts.push(`<${sg.hex}>`); sg.hex = ''; } if (sg.str) { sg.parts.push(stdFont(sg.std).encodeText(sg.str).toString()); sg.str = ''; } };
+        const styleOf = (r) => ({ size: sizeOv || r.pageSize, col: colOv || r.fill || li.fill || '#000000', th: r.th || 1, tc: (r.tcv || 0) * ul, tw: (r.twv || 0) * ul, rise: (r.ts || 0) * ul });
+        const styKey = (st) => `${fmt(st.size)}|${st.col}|${fmt(st.th)}|${fmt(st.tc)}|${fmt(st.tw)}|${fmt(st.rise)}`;
+        const num = (n) => { const l = segs[segs.length - 1]; if (!l) return; flush(l); l.parts.push(fmt(n)); };      // a move in thousandths of the size
+        const gapN = (du) => { const l = segs[segs.length - 1]; return l ? -du * 1000 / ((l.size || 1) * (l.th || 1)) : 0; };
+        const put = (r, entry, ch) => {
+          const st = styleOf(r), f = r.font, sk = styKey(st);
+          if (!forced && entry && entry.g && !entry.cont && f && f.reuse && f.fref) {         // the same glyph in the same font, exactly as it was
+            const sg = seg(`o${fuid(f)}|${sk}`, () => ({ ...st, orig: f })); flush(sg);
+            const code = entry.g.code; sg.parts.push(`<${f.two ? code.toString(16).padStart(4, '0') : hex2(code & 255)}>`); return;
+          }
+          if (entry && entry.cont) return;
+          if (!forced && f && f.reuse && f.fref && f.rev.has(ch)) {                           // a letter the original font already holds
+            const sg = seg(`o${fuid(f)}|${sk}`, () => ({ ...st, orig: f })); flush(sg);
+            const code = f.rev.get(ch); sg.parts.push(`<${f.two ? code.toString(16).padStart(4, '0') : hex2(code & 255)}>`); return;
+          }
+          if (!forced && ch === ' ' && f && f.reuse && segs.length) { num(-250); return; }
+          const std = forced || stdName(r.fam, r.bold, r.italic), font = stdFont(std), fit = fitToFont(font, ch);
+          const sg = seg(`s${std}|${sk}`, () => ({ ...st, orig: null, std })); sg.str += fit.text;
+        };
+        // a gap (a space that was only a distance) is carried as a distance; "o?" segments reuse the previous one's style, so merge them into it
+        const pick = (k) => { if (!oldC.length) return null; return oldC[Math.max(0, Math.min(oldC.length - 1, k))]; };
+        for (let k = 0; k < newC.length; k++) {
+          let entry = null, srcE;
+          if (forced) { srcE = pick(Math.min(k, oldC.length - 1)); if (srcE) srcE = { ...srcE, run: oldC[0].run }; }
+          else if (k < pre) { entry = oldC[k]; srcE = entry; }
+          else if (k >= newC.length - suf) { entry = oldC[oldC.length - (newC.length - k)]; srcE = entry; }
+          else { srcE = midOld > 0 ? pick(pre + Math.min(k - pre, midOld - 1)) : pick(pre > 0 ? pre - 1 : 0); }
+          if (!srcE) continue;
+          const r = srcE.run;
+          if (!forced && entry && entry.gap !== undefined && entry.g === null) { if (segs.length) num(gapN(entry.gap)); else put(r, null, ' '); continue; }   // an unchanged gap keeps its distance
+          put(r, entry, newC[k]);
+        }
+        for (const sg of segs) flush(sg);
+        if (!segs.length) continue;
+        let ops = `q BT ${[F[0] / ul, F[1] / ul, F[2] / vl, F[3] / vl, origin[0], origin[1]].map(fmt).join(' ')} Tm `;
+        for (const sg of segs) {
+          if (!sg.parts.length) continue;
+          const font = sg.orig ? null : stdFont(sg.std), name = sg.orig ? resName(`o${fuid(sg.orig)}`, sg.orig.fref) : resName(`s${sg.std}`, font.ref);
+          const col = fromHex(sg.col) || [0, 0, 0];
+          ops += `${col.map((v) => fmt(v / 255)).join(' ')} rg /${name} ${fmt(sg.size)} Tf ${fmt(sg.tc)} Tc ${fmt(sg.tw)} Tw ${fmt(sg.th * 100)} Tz ${fmt(sg.rise)} Ts [${sg.parts.join(' ')}] TJ `;
+        }
+        tail += `${ops}ET Q\n`;
         touchedText = true;
       }
       // additions

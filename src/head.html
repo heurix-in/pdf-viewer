@@ -630,6 +630,7 @@ body[data-mode="edit"] .an:not(.an-ffr){pointer-events:none}
 .ed-txtrow input[type=number]{width:62px}
 .ed-txtrow input[type=color]{width:30px;height:30px;padding:0;border:1.5px solid var(--line);border-radius:8px;background:#fff;cursor:pointer}
 .ed-txtrow .tgl{width:30px;height:30px;border:1.5px solid var(--line);border-radius:8px;background:#fff;color:var(--ink-soft);font-size:14px}
+.ed-txtrow .tgl:disabled{opacity:.35;cursor:default}
 .ed-txtrow .tgl[aria-pressed="true"]{background:var(--wash);color:var(--violet);border-color:var(--violet-2)}
 .ed-txtrow .grow{flex:1}
 .ed-txtnote{margin-top:6px;font-size:12px;line-height:1.35;color:var(--muted);min-height:16px}
@@ -962,7 +963,7 @@ body.is-dragging[data-tool="dist"] *,body.is-dragging[data-tool="peri"] *,body.i
 <div class="ed-txted" id="edTxtEd" role="dialog" aria-label="Edit text" hidden>
   <input type="text" id="edTxtIn" spellcheck="false" autocomplete="off" aria-label="Text of this line">
   <div class="ed-txtrow">
-    <select id="edTxtFam" aria-label="Font" title="Font"><option value="Helvetica">Sans</option><option value="Times">Serif</option><option value="Courier">Mono</option></select>
+    <select id="edTxtFam" aria-label="Font" title="Font"><option value="">Same as PDF</option><option value="Helvetica">Sans</option><option value="Times">Serif</option><option value="Courier">Mono</option></select>
     <button class="tgl" id="edTxtB" type="button" aria-pressed="false" title="Bold"><b>B</b></button>
     <button class="tgl" id="edTxtI" type="button" aria-pressed="false" title="Italic"><i>I</i></button>
     <input type="number" id="edTxtSize" min="3" max="200" step="0.5" aria-label="Size" title="Size (points)">
